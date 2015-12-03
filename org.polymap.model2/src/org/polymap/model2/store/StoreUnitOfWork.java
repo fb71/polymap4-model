@@ -28,10 +28,16 @@ import org.polymap.model2.runtime.UnitOfWork;
 public interface StoreUnitOfWork {
 
     /**
-     *
+     * Loads the state of the {@link Entity} for the given id and type.
+     * <p/>
+     * This method ist not necessarily called for each and every entity state. Entity
+     * state might also be created by preloading (see {@link CompositeStateReference}
+     * ) during {@link #executeQuery(Query)}.
+     * 
      * @param id The identifier of the Entity.
      * @param entityClass
-     * @return The {@link CompositeState}, or null if no entity exists for the given identifier. 
+     * @return The {@link CompositeState}, or null if no entity exists for the given
+     *         identifier.
      */
     public <T extends Entity> CompositeState loadEntityState( Object id, Class<T> entityClass );
 

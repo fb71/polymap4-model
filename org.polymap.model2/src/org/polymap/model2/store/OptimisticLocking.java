@@ -24,6 +24,7 @@ import java.util.concurrent.ConcurrentMap;
 import org.apache.commons.logging.LogFactory;import org.apache.commons.logging.Log;
 
 import org.polymap.model2.Entity;
+import org.polymap.model2.query.Query;
 import org.polymap.model2.runtime.ConcurrentEntityModificationException;
 import org.polymap.model2.runtime.EntityRuntimeContext.EntityStatus;
 
@@ -36,6 +37,9 @@ import org.polymap.model2.runtime.EntityRuntimeContext.EntityStatus;
  * store for concurrent modifications. So the check is fast but the table of versions
  * grows with the number of modified entities. This implementation does not detect
  * modification of the underlying store by a second party.
+ * <p/>
+ * The implementation relies on globally unique ids across all Entity types in the
+ * repository.
  * 
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */
@@ -96,7 +100,8 @@ public class OptimisticLocking
                     Integer storeVersion = storeVersions.get( entity.id() );
                     if (storeVersion != loadedVersion) {
                         throw new ConcurrentEntityModificationException( 
-                                "Entity has been modified be another UnitOfWork. (loadedVersion=" + loadedVersion + ", storedVersion=" + storeVersion + ")", 
+                                "Entity has been modified be another UnitOfWork: " + entity +
+                                "\r\n\t(loadedVersion=" + loadedVersion + ", storedVersion=" + storeVersion + ")", 
                                 singletonList( entity ) );
                     }
                     prepared.add( entity );
@@ -126,7 +131,7 @@ public class OptimisticLocking
                             "Entity has been modified AFTER prepare(): " + entity.id(), 
                             singletonList( entity ) );
                 }
-                // update also laodedVersions for subsequent commits
+                // update also loadedVersions for subsequent commits
                 loadedVersions.put( entity.id(), newVersion );                
             }
             prepared = null;
@@ -143,13 +148,18 @@ public class OptimisticLocking
         }
 
 
-        @Override
-        public <T extends Entity> CompositeState loadEntityState( Object id, Class<T> entityClass ) {
-            CompositeState result = suow.loadEntityState( id, entityClass );
+        protected void registerLoadedVersion( Object id ) {
             Integer version = storeVersions.get( id );
             if (version != null) {
                 loadedVersions.put( id, version );
             }
+        }
+        
+        
+        @Override
+        public <T extends Entity> CompositeState loadEntityState( Object id, Class<T> entityClass ) {
+            CompositeState result = suow.loadEntityState( id, entityClass );
+            registerLoadedVersion( id );
             return result;
         }
 
@@ -157,13 +167,38 @@ public class OptimisticLocking
         @Override
         public <T extends Entity> CompositeState adoptEntityState( Object state, Class<T> entityClass ) {
             CompositeState result = suow.adoptEntityState( state, entityClass );
-            Integer version = storeVersions.get( result.id() );
-            if (version != null) {
-                loadedVersions.put( result.id(), version );
-            }
+            registerLoadedVersion( result.id() );
             return result;
         }
 
+
+        @Override
+        public StoreResultSet executeQuery( Query query ) {
+            StoreResultSet delegate = suow.executeQuery( query );
+            return new StoreResultSet() {
+                @Override
+                public CompositeStateReference next() {
+                    CompositeStateReference result = delegate.next();
+                    CompositeState preloaded = result.get();
+                    if (preloaded != null) {
+                        registerLoadedVersion( preloaded.id() );
+                    }
+                    return result;
+                }
+                @Override
+                public boolean hasNext() {
+                    return delegate.hasNext();
+                }
+                @Override
+                public int size() {
+                    return delegate.size();
+                }
+                @Override
+                public void close() {
+                    delegate.close();
+                }
+            };
+        }
     }
         
     

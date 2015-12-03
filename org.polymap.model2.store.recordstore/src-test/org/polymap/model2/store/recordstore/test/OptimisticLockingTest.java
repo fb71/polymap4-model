@@ -19,6 +19,7 @@ import junit.framework.TestCase;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import org.polymap.model2.query.Expressions;
 import org.polymap.model2.runtime.ConcurrentEntityModificationException;
 import org.polymap.model2.runtime.EntityRepository;
 import org.polymap.model2.runtime.UnitOfWork;
@@ -152,6 +153,42 @@ public class OptimisticLockingTest
         uow.commit();
 
         assertEquals( "modified2", uow.entity( Employee.class, employee.id() ).name.get() );
+
+        UnitOfWork uow3 = repo.newUnitOfWork();
+        assertEquals( "modified2", uow3.entity( Employee.class, employee.id() ).name.get() );
+    }
+
+
+    /**
+     * Check if queried/preloaded entities are properly tracked. If not, then second
+     * uow fails because entity was not tracked and OptimisticLocking misleadingly
+     * claims concurrent modification.
+     */
+    public void testPreloaded() throws Exception {
+        Employee employee = uow.createEntity( Employee.class, null, new ValueInitializer<Employee>() {
+            public Employee initialize( Employee prototype ) throws Exception {
+                prototype.name.set( "donnerstag" );
+                return prototype;
+            }
+        });
+        uow.commit();
+        
+        UnitOfWork uow2 = repo.newUnitOfWork();
+        uow2.query( Employee.class )
+                .where( Expressions.id( employee ) )
+                .execute()
+                .stream().findAny().get().name.set( "modified" );
+        uow2.commit();
+        uow.commit();
+
+        uow2 = repo.newUnitOfWork();
+        Employee employee2 = uow2.query( Employee.class )
+                .where( Expressions.id( employee ) )
+                .execute()
+                .stream().findAny().get();
+        assertEquals( "modified", uow2.entity( Employee.class, employee.id() ).name.get() );
+        employee2.name.set( "modified2" );
+        uow2.commit();
 
         UnitOfWork uow3 = repo.newUnitOfWork();
         assertEquals( "modified2", uow3.entity( Employee.class, employee.id() ).name.get() );
