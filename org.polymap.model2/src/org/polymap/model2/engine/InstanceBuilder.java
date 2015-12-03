@@ -24,10 +24,9 @@ import java.lang.reflect.Method;
 
 import javax.cache.configuration.MutableConfiguration;
 
-import org.apache.commons.logging.LogFactory;import org.apache.commons.logging.Log;
-
-import com.google.common.base.Function;
-import com.google.common.collect.Iterables;
+import org.apache.commons.logging.LogFactory;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.logging.Log;
 
 import org.polymap.model2.Association;
 import org.polymap.model2.AssociationConcern;
@@ -108,8 +107,8 @@ public final class InstanceBuilder {
     public <T extends Composite> T newComposite( CompositeState state, Class<T> entityClass ) { 
         try {
             // new instance
-            Constructor<?> ctor = entityClass.getConstructor( new Class[] {} );
-            T instance = (T)ctor.newInstance( new Object[] {} );
+            Constructor<?> ctor = entityClass.getConstructor( ArrayUtils.EMPTY_CLASS_ARRAY );
+            T instance = (T)ctor.newInstance( ArrayUtils.EMPTY_OBJECT_ARRAY );
             
             // set context
             contextField.set( instance, context );
@@ -190,9 +189,7 @@ public final class InstanceBuilder {
                             }
                         }
                         // concerns
-                        for (PropertyConcernBase concern : fieldConcerns( field, prop )) {
-                            prop = concern;
-                        }
+                        prop = fieldConcerns( field, prop );
                     }
 
                     // Association
@@ -206,9 +203,7 @@ public final class InstanceBuilder {
                         prop = new AssociationImpl( context, storeProp );
                         prop = new ConstraintsAssociationInterceptor( (Association)prop, (EntityRuntimeContextImpl)context );
                         // concerns
-                        for (PropertyConcernBase concern : fieldConcerns( field, prop )) {
-                            prop = concern;
-                        }
+                        prop = fieldConcerns( field, prop );
                     }
 
                     // ManyAssociation
@@ -223,9 +218,7 @@ public final class InstanceBuilder {
                         prop = new ManyAssociationImpl( context, storeProp );
                         prop = new ConstraintsManyAssociationInterceptor( (ManyAssociation)prop, (EntityRuntimeContextImpl)context );
                         // concerns
-                        for (PropertyConcernBase concern : fieldConcerns( field, prop )) {
-                            prop = concern;
-                        }
+                       prop = fieldConcerns( field, prop );
                     }
 
                     // Collection
@@ -245,9 +238,7 @@ public final class InstanceBuilder {
                         }
                         prop = new ConstraintsCollectionInterceptor( (CollectionProperty)prop, (EntityRuntimeContextImpl)context );
                         // concerns
-                        for (PropertyConcernBase concern : fieldConcerns( field, prop )) {
-                            prop = concern;
-                        }
+                        prop = fieldConcerns( field, prop );
                     }
 
                     // set field
@@ -265,7 +256,7 @@ public final class InstanceBuilder {
     }
 
     
-    protected Iterable<PropertyConcernBase> fieldConcerns( final Field field, final PropertyBase prop ) throws Exception {
+    protected PropertyBase fieldConcerns( final Field field, final PropertyBase prop ) throws Exception {
         List<Class> concernTypes = concerns.get( field, new Loader<Field,List<Class>>() {
             public List<Class> load( Field key ) {
                 List<Class> result = new ArrayList();
@@ -277,46 +268,44 @@ public final class InstanceBuilder {
                 // Field concerns
                 Concerns fa = field.getAnnotation( Concerns.class );
                 if (fa != null) {
-                    for (Class<? extends PropertyConcernBase> concern : fa.value()) {
-                        result.add( concern );
-                    }
+                    result.addAll( Arrays.asList( fa.value() ) );
                 }
                 return result;
             }
         });
         
-        return Iterables.transform( concernTypes, new Function<Class,PropertyConcernBase>() {
-            public PropertyConcernBase apply( Class concernType ) {
-                try {
-                    // early check concern type
-                    if (Property.class.isAssignableFrom( field.getType() )
-                            && !PropertyConcern.class.isAssignableFrom( concernType )) {
-                        throw new ModelRuntimeException( "Concerns of Property have to extend PropertyConcern: " + concernType.getName() + " @ " + field.getName() );
-                    }
-                    else if (CollectionProperty.class.isAssignableFrom( field.getType() )
-                            && !CollectionPropertyConcern.class.isAssignableFrom( concernType )) {
-                        throw new ModelRuntimeException( "Concerns of CollectionProperty have to extend CollectionPropertyConcern: " + concernType.getName() + " @ " + field.getName() );
-                    }
-                    else if (Association.class.isAssignableFrom( field.getType() )
-                            && !AssociationConcern.class.isAssignableFrom( concernType )) {
-                        throw new ModelRuntimeException( "Concerns of Association have to extend AssociationConcern: " + concernType.getName() + " @ " + field.getName() );
-                    }
+        PropertyBase result = prop;
+        for (Class concernType : concernTypes) {
+            try {
+                // early check concern type
+                if (Property.class.isAssignableFrom( field.getType() )
+                        && !PropertyConcern.class.isAssignableFrom( concernType )) {
+                    throw new ModelRuntimeException( "Concerns of Property have to extend PropertyConcern: " + concernType.getName() + " @ " + field.getName() );
+                }
+                else if (CollectionProperty.class.isAssignableFrom( field.getType() )
+                        && !CollectionPropertyConcern.class.isAssignableFrom( concernType )) {
+                    throw new ModelRuntimeException( "Concerns of CollectionProperty have to extend CollectionPropertyConcern: " + concernType.getName() + " @ " + field.getName() );
+                }
+                else if (Association.class.isAssignableFrom( field.getType() )
+                        && !AssociationConcern.class.isAssignableFrom( concernType )) {
+                    throw new ModelRuntimeException( "Concerns of Association have to extend AssociationConcern: " + concernType.getName() + " @ " + field.getName() );
+                }
 
-                    // create concern
-                    PropertyConcernBase concern = (PropertyConcernBase)concernType.newInstance();
-                    concernContextField.set( concern, context );
-                    concernDelegateField.set( concern, prop );
-                    
-                    return concern;
-                } 
-                catch (ModelRuntimeException e) {
-                    throw e;
-                }
-                catch (Exception e) {
-                    throw new ModelRuntimeException( "Error while initializing concern: " + concernType + " (" + e.getLocalizedMessage() + ")", e );
-                }
+                // create concern
+                PropertyConcernBase concern = (PropertyConcernBase)concernType.newInstance();
+                concernContextField.set( concern, context );
+                concernDelegateField.set( concern, result );
+
+                result = concern;
+            } 
+            catch (ModelRuntimeException e) {
+                throw e;
             }
-        });
+            catch (Exception e) {
+                throw new ModelRuntimeException( "Error while initializing concern: " + concernType + " (" + e.getLocalizedMessage() + ")", e );
+            }
+        }
+        return result;
     }
     
 }
