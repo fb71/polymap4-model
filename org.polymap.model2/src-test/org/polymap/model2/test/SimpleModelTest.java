@@ -227,6 +227,11 @@ public abstract class SimpleModelTest
         employee.jap.set( 1 );
         employee.jap.get();
         assertEquals( getCount+1, InvocationCountConcern.getCount.get() );        
+        assertEquals( setCount+1, InvocationCountConcern.setCount.get() );
+        
+        // computed and concerned
+        employee.as( TrackableMixin.class ).get().computed.get();
+        assertEquals( getCount+2, InvocationCountConcern.getCount.get() );        
         assertEquals( setCount+1, InvocationCountConcern.setCount.get() );        
     }
     

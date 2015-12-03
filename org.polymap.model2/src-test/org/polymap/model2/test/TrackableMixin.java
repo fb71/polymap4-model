@@ -17,6 +17,7 @@ package org.polymap.model2.test;
 import org.polymap.model2.Composite;
 import org.polymap.model2.Computed;
 import org.polymap.model2.ComputedProperty;
+import org.polymap.model2.Concerns;
 import org.polymap.model2.Property;
 
 /**
@@ -29,7 +30,8 @@ public class TrackableMixin
 
     protected Property<Integer>     track;
     
-    @Computed(SimpleComputedProperty.class)
+    @Computed( SimpleComputedProperty.class )
+    @Concerns( InvocationCountConcern.class )
     protected Property<String>      computed;
     
     

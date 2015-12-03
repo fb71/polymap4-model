@@ -59,6 +59,9 @@ public class DefaultValues {
             else if (type.equals( Integer.class )) {
                 return Integer.parseInt( defaultValue.value() );
             }
+            else if (type.equals( Boolean.class )) {
+                return Boolean.parseBoolean( defaultValue.value() );
+            }
             // XXX
             else {
                 throw new UnsupportedOperationException( "Default values of this type are not supported yet: " + type );
