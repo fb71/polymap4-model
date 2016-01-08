@@ -45,8 +45,8 @@ public class BidiBackAssociationFinder {
     public static <T extends Entity> PropertyBase<T> findBackAssociation( 
             EntityRuntimeContext context, PropertyInfo propInfo, T target ) {
         // find my host entity
-        Class hostType = context.getInfo().getType();
-        
+        Class hostType = context.getEntity().info().getType();
+
         // find back association
         Collection<PropertyInfo> propInfos = target.info().getProperties();
         List<PropertyInfo> candidates = propInfos.stream()

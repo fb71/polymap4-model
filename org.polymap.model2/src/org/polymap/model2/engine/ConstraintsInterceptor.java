@@ -59,7 +59,7 @@ abstract class ConstraintsInterceptor<T>
 
     
     protected String fullPropName() {
-        return context.getInfo().getName() + "." + info().getName();
+        return context.getEntity().info().getName() + "." + info().getName();
     }
 
 

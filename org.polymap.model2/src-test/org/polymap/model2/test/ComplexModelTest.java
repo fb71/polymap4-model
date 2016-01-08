@@ -214,7 +214,7 @@ public abstract class ComplexModelTest
         assertSame( company, employee.computedCompany.get() );
         uow.commit();
 
-        // check back reference; uncommitted
+        // check back reference; committed
         assertSame( company, employee.computedCompany.get() );
     }
 

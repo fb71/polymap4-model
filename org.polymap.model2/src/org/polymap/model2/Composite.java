@@ -58,9 +58,7 @@ public abstract class Composite {
      * 
      */
     public CompositeInfo info() {
-        // FIXME this makes the LuceneComplexQueryTest fail but is needed for... ???
-//        return context.getRepository().infoOf( getClass() );
-        return context.getInfo();
+        return context.getRepository().infoOf( getClass() );
     }
 
     public String toString() {

@@ -50,15 +50,15 @@ public interface EntityRuntimeContext {
         
     }
     
+    public <E extends Entity> E getEntity();
+    
     /**
-     * 
+     * Returns the {@link Entity} of this context or any of its mixins. 
      *
      * @param type The type of the entity or mixin to find.
      */
     public <T extends Composite> T getCompositePart( Class<T> type );
     
-    public CompositeInfo getInfo();
-
     public CompositeState getState();
     
     public EntityStatus getStatus();

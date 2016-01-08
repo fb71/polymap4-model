@@ -90,7 +90,7 @@ public class BidiManyAssociationConcern<T extends Entity>
         // find back association
         PropertyBase backAssoc = findBackAssociation( context, info(), target );
 
-        Class hostType = context.getInfo().getType();
+        Class hostType = context.getEntity().info().getType();
         Entity hostEntity = (Entity)context.getCompositePart( hostType );
 
         // Association

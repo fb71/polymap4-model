@@ -316,12 +316,17 @@ public final class TemplateInstanceBuilder {
             implements EntityRuntimeContext {
 
         @Override
-        public CompositeInfo getInfo() {
-            return compositeInfo;
+        public EntityRepository getRepository() {
+            return TemplateInstanceBuilder.this.repo;
         }
 
         @Override
         public <T extends Composite> T getCompositePart( Class<T> type ) {
+            throw new UnsupportedOperationException( "Method is not allowed for template Composite instance." );
+        }
+
+        @Override
+        public <E extends Entity> E getEntity() {
             throw new UnsupportedOperationException( "Method is not allowed for template Composite instance." );
         }
 
@@ -352,11 +357,6 @@ public final class TemplateInstanceBuilder {
 
         @Override
         public StoreUnitOfWork getStoreUnitOfWork() {
-            throw new UnsupportedOperationException( "Method is not allowed for template Composite instance." );
-        }
-
-        @Override
-        public EntityRepository getRepository() {
             throw new UnsupportedOperationException( "Method is not allowed for template Composite instance." );
         }
 

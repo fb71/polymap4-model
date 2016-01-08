@@ -71,7 +71,9 @@ public class EntityRepositoryImpl
             if (!infos.containsKey( type )) {
                 log.debug( "    Composite type: " + type );
                 CompositeInfoImpl info = new CompositeInfoImpl( type );
-                infos.put( type, info );
+                if (infos.put( type, info ) != null) {
+                    throw new ModelRuntimeException( "CompositeInfo already registered for: " + type );
+                }
 
                 // init static TYPE variable
                 try {
@@ -96,6 +98,8 @@ public class EntityRepositoryImpl
                 }
             }
         }
+//        infos.entrySet().forEach( entry -> System.out.println( "   " + entry.getKey() + " -> ..." ) );
+//        log.debug( "done" );
     }
 
     
@@ -144,8 +148,7 @@ public class EntityRepositoryImpl
     
     protected <T extends Entity> T buildEntity( CompositeState state, Class<T> entityClass, UnitOfWork uow ) {
         try {
-            EntityRuntimeContextImpl entityContext = new EntityRuntimeContextImpl( 
-                    state, EntityStatus.LOADED, uow );
+            EntityRuntimeContextImpl entityContext = new EntityRuntimeContextImpl( state, EntityStatus.LOADED, uow );
             InstanceBuilder builder = new InstanceBuilder( entityContext );
             T result = builder.newComposite( state, entityClass );
             entityContext.entity = result;
@@ -248,11 +251,6 @@ public class EntityRepositoryImpl
         }
         
         @Override
-        public CompositeInfo getInfo() {
-            return getRepository().infoOf( entity.getClass() );
-        }
-
-        @Override
         public UnitOfWork getUnitOfWork() {
             checkEviction();
             return uow;
@@ -298,6 +296,12 @@ public class EntityRepositoryImpl
             checkEviction();
             this.status = newStatus;
         }
+
+        @Override
+        public <E extends Entity> E getEntity() {
+            return (E)entity;
+        }
+
 
         @Override
         public <T extends Composite> T getCompositePart( Class<T> type ) {

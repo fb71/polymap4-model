@@ -64,7 +64,7 @@ public class BidiAssociationConcern<T extends Entity>
         PropertyBase backAssoc = findBackAssociation( context, info(), target );
 
         // find my host entity
-        Class hostType = context.getInfo().getType();
+        Class hostType = context.getEntity().info().getType();
         Entity hostEntity = (Entity)context.getCompositePart( hostType );
 
         // set back reference
