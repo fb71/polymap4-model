@@ -1,6 +1,6 @@
 /* 
  * polymap.org
- * Copyright (C) 2015, Falko Bräutigam. All rights reserved.
+ * Copyright (C) 2015-2016, Falko Bräutigam. All rights reserved.
  *
  * This is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as
@@ -12,7 +12,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
  */
-package org.polymap.model2.engine;
+package org.polymap.model2.engine.cache;
 
 import java.util.Iterator;
 import java.util.Map;
@@ -26,6 +26,8 @@ import javax.cache.configuration.CacheEntryListenerConfiguration;
 import javax.cache.configuration.CompleteConfiguration;
 import javax.cache.configuration.Configuration;
 import javax.cache.configuration.Factory;
+import javax.cache.expiry.Duration;
+import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.integration.CacheLoader;
 import javax.cache.integration.CompletionListener;
 import javax.cache.processor.EntryProcessor;
@@ -35,9 +37,14 @@ import javax.cache.processor.EntryProcessorResult;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import org.polymap.model2.engine.InstanceBuilder;
+import org.polymap.model2.engine.UnitOfWorkImpl;
+import org.polymap.model2.engine.cache.ConcurrentReferenceHashMap.ReferenceType;
+
 /**
- * Simple non-evicting cache, based on {@link ConcurrentHashMap}, mainly for testing
- * Model2 implementation.
+ * Simple cache based on {@link ConcurrentHashMap} or
+ * {@link ConcurrentReferenceHashMap} depending on cache configuration. This is
+ * the default used by {@link UnitOfWorkImpl} and for {@link InstanceBuilder}.
  *
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */
@@ -46,16 +53,32 @@ public class SimpleCache<K,V>
 
     private static Log log = LogFactory.getLog( SimpleCache.class );
 
-    private ConcurrentMap<K,V>      entries = new ConcurrentHashMap( 1024 );
+    public static final int         INITIAL_SIZE = 256;
+    public static final int         CONCURRENCY = 4;
+    
+    private ConcurrentMap<K,V>      entries;
     
     private CacheLoader<K,V>        loader;
     
     
     public SimpleCache( Configuration config ) {
         if (config instanceof CompleteConfiguration) {
-            Factory<CacheLoader<K,V>> factory = ((CompleteConfiguration)config).getCacheLoaderFactory();
-            if (factory != null) {
-                loader = factory.create();
+            CompleteConfiguration cconfig = (CompleteConfiguration)config;
+            
+            // expiry
+            Factory<ExpiryPolicy> expiryFactory = cconfig.getExpiryPolicyFactory();
+            ExpiryPolicy expiryPolicy = expiryFactory.create();
+            if (expiryPolicy.getExpiryForCreation().equals( Duration.ETERNAL )) {
+                entries = new ConcurrentHashMap( INITIAL_SIZE );
+            }
+            else {
+                entries = new ConcurrentReferenceHashMap( INITIAL_SIZE, 0.75f, CONCURRENCY, ReferenceType.STRONG, ReferenceType.SOFT, null );
+            }
+            
+            // loader
+            Factory<CacheLoader<K,V>> loaderFactory = cconfig.getCacheLoaderFactory();
+            if (loaderFactory != null) {
+                loader = loaderFactory.create();
             }
         }
     }

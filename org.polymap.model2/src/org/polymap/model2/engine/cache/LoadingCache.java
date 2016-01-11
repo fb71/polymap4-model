@@ -12,7 +12,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
  */
-package org.polymap.model2.engine;
+package org.polymap.model2.engine.cache;
 
 import java.util.Iterator;
 import java.util.Map;

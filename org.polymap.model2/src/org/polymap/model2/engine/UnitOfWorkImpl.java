@@ -1,10 +1,10 @@
 /* 
  * polymap.org
- * Copyright (C) 2012-2014, Falko Bräutigam. All rights reserved.
+ * Copyright (C) 2012-2016, Falko Bräutigam. All rights reserved.
  *
  * This is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as
- * published by the Free Software Foundation; either version 2.1 of
+ * published by the Free Software Foundation; either version 3.0 of
  * the License, or (at your option) any later version.
  *
  * This software is distributed in the hope that it will be useful,
@@ -32,19 +32,23 @@ import java.io.IOException;
 import javax.cache.Cache.Entry;
 import javax.cache.CacheManager;
 import javax.cache.configuration.MutableConfiguration;
+import javax.cache.expiry.AccessedExpiryPolicy;
+import javax.cache.expiry.Duration;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.Iterators;
 
 import org.polymap.model2.Composite;
 import org.polymap.model2.Entity;
-import org.polymap.model2.engine.LoadingCache.Loader;
+import org.polymap.model2.engine.cache.LoadingCache;
+import org.polymap.model2.engine.cache.LoadingCache.Loader;
+import org.polymap.model2.engine.cache.SimpleCache;
 import org.polymap.model2.query.Query;
 import org.polymap.model2.query.ResultSet;
 import org.polymap.model2.query.grammar.BooleanExpression;
+import org.polymap.model2.runtime.CommitLockStrategy;
 import org.polymap.model2.runtime.ConcurrentEntityModificationException;
 import org.polymap.model2.runtime.EntityRuntimeContext.EntityStatus;
-import org.polymap.model2.runtime.CommitLockStrategy;
 import org.polymap.model2.runtime.Lifecycle;
 import org.polymap.model2.runtime.Lifecycle.State;
 import org.polymap.model2.runtime.ModelRuntimeException;
@@ -90,11 +94,13 @@ public class UnitOfWorkImpl
         assert repo != null : "repo must not be null.";
         assert suow != null : "suow must not be null.";
 
-        MutableConfiguration cacheConfig = new MutableConfiguration();
+        MutableConfiguration cacheConfig = new MutableConfiguration()
+                .setExpiryPolicyFactory( AccessedExpiryPolicy.factoryOf( Duration.ONE_MINUTE ) );
         CacheManager cacheManager = repo.getConfig().cacheManager.get();
+        
         this.loaded = LoadingCache.create( cacheManager, cacheConfig );
         this.loadedMixins = LoadingCache.create( cacheManager, cacheConfig );
-        this.modified = new ConcurrentHashMap( 1024, 0.75f, 4 );
+        this.modified = new ConcurrentHashMap( SimpleCache.INITIAL_SIZE, 0.75f, SimpleCache.CONCURRENCY );
 
         commitLock = repo.getConfig().commitLockStrategy.get().get();
         
@@ -195,10 +201,6 @@ public class UnitOfWorkImpl
                 CompositeState state = preloaded != null ? preloaded.get() : null;
                 // no preloaded or it returned null?
                 state = state != null ? state : storeUow.loadEntityState( id, entityClass );
-                
-//                        .map( supplier -> supplier.get() )
-//                        .orElse( storeUow.loadEntityState( id, entityClass ) );
-                
                 return state != null ? repo.buildEntity( state, entityClass, UnitOfWorkImpl.this ) : null;
             }
         });

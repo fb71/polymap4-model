@@ -34,10 +34,11 @@ import org.polymap.model2.store.StoreSPI;
  * UnitOfWork. After {@link #commit()} all modifications are persitently stored. By
  * calling {@link #close()} the UnitOfWork can be *discarded* at any point in time.
  * <p/>
- * UnitOfWork can be safely read accessed from <b>multiple threads</b>. Concurrent
- * writes to one entity may cause errors. This depends on the store implementation.
- * The strategy to handle attempts to concurrently {@link #prepare()}/
- * {@link #commit()} can be set via {@link Configuration#commitLockStrategy}.
+ * UnitOfWork can be safely accessed from <b>multiple threads</b>. However,
+ * concurrent modifications of <b>one entity</b> results in undefined behaviour
+ * and/or errors. This depends on the store implementation. The strategy to handle
+ * attempts to concurrently {@link #prepare()}/ {@link #commit()} can be specified
+ * via {@link Configuration#commitLockStrategy}.
  * 
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */

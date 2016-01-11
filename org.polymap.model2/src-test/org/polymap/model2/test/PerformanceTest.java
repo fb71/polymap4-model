@@ -16,6 +16,8 @@ package org.polymap.model2.test;
 
 import junit.framework.TestCase;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -54,6 +56,8 @@ public abstract class PerformanceTest
 
 
     public void testPerformance() throws Exception {
+        Timer overall = Timer.startNow();
+        
         logHeap();
         Timer timer = Timer.startNow();
         int loops = 1000;
@@ -92,6 +96,7 @@ public abstract class PerformanceTest
         Employee one = uow3.query( Employee.class ).maxResults( 1 ).execute().stream().findAny().get();
         log.info( "Query one time: " + timer.elapsedTime() + "ms" );
         
+        timer.start();
         for (int i=0; i<loops; i++) {
             UnitOfWork uow4 = repo.newUnitOfWork();
             @SuppressWarnings("unused")
@@ -99,6 +104,10 @@ public abstract class PerformanceTest
         }
         log.info( "Load one time: " + timer.elapsedTime() + "ms" );
         logHeap();
+        
+        long elapsed = overall.elapsedTime();
+        log.info( "Elapsed time: " + elapsed + "ms" );
+        assertThat( "Performance! loops=" + loops + ", time=" + elapsed + " (>=2s)", elapsed < 2000 );
     }
 
     

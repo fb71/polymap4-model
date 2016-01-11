@@ -32,7 +32,7 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.Iterators;
 
 import org.polymap.model2.Entity;
-import org.polymap.model2.engine.LoadingCache.Loader;
+import org.polymap.model2.engine.cache.LoadingCache.Loader;
 import org.polymap.model2.query.Query;
 import org.polymap.model2.query.ResultSet;
 import org.polymap.model2.query.grammar.BooleanExpression;

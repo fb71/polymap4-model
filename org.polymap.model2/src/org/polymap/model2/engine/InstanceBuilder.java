@@ -23,10 +23,12 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
 import javax.cache.configuration.MutableConfiguration;
+import javax.cache.expiry.AccessedExpiryPolicy;
+import javax.cache.expiry.Duration;
 
-import org.apache.commons.logging.LogFactory;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.polymap.model2.Association;
 import org.polymap.model2.AssociationConcern;
@@ -42,7 +44,9 @@ import org.polymap.model2.PropertyBase;
 import org.polymap.model2.PropertyConcern;
 import org.polymap.model2.PropertyConcernBase;
 import org.polymap.model2.engine.EntityRepositoryImpl.EntityRuntimeContextImpl;
-import org.polymap.model2.engine.LoadingCache.Loader;
+import org.polymap.model2.engine.cache.LoadingCache;
+import org.polymap.model2.engine.cache.LoadingCache.Loader;
+import org.polymap.model2.engine.cache.SimpleCacheManager;
 import org.polymap.model2.runtime.CompositeInfo;
 import org.polymap.model2.runtime.EntityRuntimeContext;
 import org.polymap.model2.runtime.ModelRuntimeException;
@@ -73,7 +77,9 @@ public final class InstanceBuilder {
     static {
         try {
             SimpleCacheManager cacheManager = new SimpleCacheManager();
-            concerns = LoadingCache.create( cacheManager, new MutableConfiguration() );
+            MutableConfiguration cacheConfig = new MutableConfiguration()
+                    .setExpiryPolicyFactory( AccessedExpiryPolicy.factoryOf( Duration.ONE_MINUTE ) );
+            concerns = LoadingCache.create( cacheManager, cacheConfig );
                     
             contextField = Composite.class.getDeclaredField( "context" );
             contextField.setAccessible( true );

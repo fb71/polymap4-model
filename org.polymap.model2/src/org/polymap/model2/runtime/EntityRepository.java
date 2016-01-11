@@ -23,8 +23,8 @@ import org.apache.commons.logging.LogFactory;import org.apache.commons.logging.L
 import org.polymap.model2.Composite;
 import org.polymap.model2.Entity;
 import org.polymap.model2.engine.EntityRepositoryImpl;
-import org.polymap.model2.engine.SimpleCache;
-import org.polymap.model2.engine.SimpleCacheManager;
+import org.polymap.model2.engine.cache.SimpleCache;
+import org.polymap.model2.engine.cache.SimpleCacheManager;
 import org.polymap.model2.runtime.config.ConfigurationFactory;
 import org.polymap.model2.runtime.config.Mandatory;
 import org.polymap.model2.runtime.config.Property;
@@ -67,7 +67,7 @@ public abstract class EntityRepository
         
         /**
          * The CacheManager to create internal caches from. Mainly this is used to
-         * create the cache for {@link Entity} instances.If not specified then a
+         * create the cache for {@link Entity} instances. If not specified then a
          * default Cache ({@link SimpleCache}) implementation is used.
          */
         public Property<Configuration,CacheManager> cacheManager;
