@@ -14,7 +14,6 @@
  */
 package org.polymap.model2.engine;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 
@@ -47,7 +46,7 @@ public class CompositeCollectionPropertyImpl<T extends Composite>
      * UnitOfWork.
      */
     // XXX make it a Cache!?
-    private ArrayList<T>                    cache;
+    //private ArrayList<T>                    cache;
 
     
     public CompositeCollectionPropertyImpl( EntityRuntimeContext entityContext, StoreCollectionProperty storeProp ) {
@@ -77,11 +76,11 @@ public class CompositeCollectionPropertyImpl<T extends Composite>
                 throw new ModelRuntimeException( e );
             }
         }
-        // update cache
-        if (cache == null) {
-            cache = new ArrayList();
-        }
-        cache.add( (T)value );
+//        // update cache
+//        if (cache == null) {
+//            cache = new ArrayList();
+//        }
+//        cache.add( (T)value );
         
         return (U)value;
     }
@@ -91,36 +90,36 @@ public class CompositeCollectionPropertyImpl<T extends Composite>
     public Iterator<T> iterator() {
         // XXX is there any kind of thread safety needed here?
         
-        // cached?
-        if (cache != null) {
-            return new Iterator<T>() {
-                private Iterator<T>     cacheIt = cache.iterator();
-                private int             index = 0;
-                @Override
-                public boolean hasNext() {
-                    return cacheIt.hasNext();
-                }
-                @Override
-                public T next() {
-                    index ++;
-                    return cacheIt.next();
-                }
-                @Override
-                public void remove() {
-                    int c = 0, i = index-1;
-                    for (Iterator storeIt=storeProp.iterator(); storeIt.hasNext() && c <= i; c++) {
-                        if (c == i) {
-                            storeIt.remove();
-                        }
-                    }
-                    assert (c-1) == i;
-                    cacheIt.remove();
-                }
-            };
-        }
-        // not cached yet
-        else {
-            cache = new ArrayList();
+//        // cached?
+//        if (cache != null) {
+//            return new Iterator<T>() {
+//                private Iterator<T>     cacheIt = cache.iterator();
+//                private int             index = 0;
+//                @Override
+//                public boolean hasNext() {
+//                    return cacheIt.hasNext();
+//                }
+//                @Override
+//                public T next() {
+//                    index ++;
+//                    return cacheIt.next();
+//                }
+//                @Override
+//                public void remove() {
+//                    int c = 0, i = index-1;
+//                    for (Iterator storeIt=storeProp.iterator(); storeIt.hasNext() && c <= i; c++) {
+//                        if (c == i) {
+//                            storeIt.remove();
+//                        }
+//                    }
+//                    assert (c-1) == i;
+//                    cacheIt.remove();
+//                }
+//            };
+//        }
+//        // not cached yet
+//        else {
+//            cache = new ArrayList();
             return new Iterator<T>() {
                 private Iterator        storeIt = storeProp.iterator();
                 @Override
@@ -132,29 +131,31 @@ public class CompositeCollectionPropertyImpl<T extends Composite>
                     CompositeState state = (CompositeState)storeIt.next();
                     InstanceBuilder builder = new InstanceBuilder( entityContext );
                     T result = (T)builder.newComposite( state, state.compositeInstanceType( info().getType() ) );
-                    cache.add( result );
+//                    cache.add( result );
                     return result;
                 }
                 @Override
                 public void remove() {
                     storeIt.remove();
-                    cache.remove( cache.size()-1 );
+//                    cache.remove( cache.size()-1 );
                 }
             };
-        }
+//        }
     }
 
 
     @Override
     public boolean remove( Object o ) {
-        for (Iterator it=iterator(); it.hasNext(); ) {
-            if (o == it.next()) {
-                it.remove();
-                return true;
-            }
-        }
-        return false;
-        //return Iterables.removeIf( this, Predicates.sameAs( o ) );
+        throw new RuntimeException( "Not yet implemented." );
+//        for (Iterator<T> it=iterator(); it.hasNext(); ) {
+//            EntityRepositoryImpl repo = (EntityRepositoryImpl)entityContext.getRepository();
+//            repo.contextOfEntity( o );
+//            if (o == it.next()) {
+//                it.remove();
+//                return true;
+//            }
+//        }
+//        return false;
     }
 
 

@@ -260,16 +260,53 @@ public class SimpleCache<K,V>
 
     @Override
     public Iterator<javax.cache.Cache.Entry<K,V>> iterator() {
-        return entries.entrySet().stream()
-            .<Cache.Entry<K,V>>map( entry -> new Cache.Entry<K,V>() {
-                @Override
-                public K getKey() { return entry.getKey(); }
-                @Override
-                public V getValue() { return entry.getValue(); }
-                @Override
-                public <T> T unwrap( Class<T> clazz ) { throw new IllegalArgumentException( "Guava does not provide an Entry type." ); } 
-            })
-            .iterator();
+        return new Iterator<javax.cache.Cache.Entry<K,V>>() {
+            Iterator<java.util.Map.Entry<K,V>> it = entries.entrySet().iterator();
+            
+            @Override
+            public boolean hasNext() {
+                return it.hasNext();
+            }
+            @Override
+            public javax.cache.Cache.Entry<K,V> next() {
+                java.util.Map.Entry<K,V> next = it.next();
+                
+                while (next.getValue() == null) {
+                    log.warn( "!!! Null returned from cache (reclaimed!?) !!!" );
+                    if (!hasNext()) {
+                        throw new RuntimeException( "" );
+                    }
+                    next = it.next();
+                }
+
+                java.util.Map.Entry<K,V> entry = next;
+                return new Cache.Entry<K,V>() {
+                    @Override
+                    public K getKey() { 
+                        return entry.getKey();
+                    }
+                    @Override
+                    public V getValue() { 
+                        return entry.getValue();
+                    }
+                    @Override
+                    public <T> T unwrap( Class<T> clazz ) { 
+                        throw new IllegalArgumentException( "Guava does not provide an Entry type." );
+                    }
+                };
+            }
+        };
+        
+//        return entries.entrySet().stream()
+//            .<Cache.Entry<K,V>>map( entry -> new Cache.Entry<K,V>() {
+//                @Override
+//                public K getKey() { return entry.getKey(); }
+//                @Override
+//                public V getValue() { return entry.getValue(); }
+//                @Override
+//                public <T> T unwrap( Class<T> clazz ) { throw new IllegalArgumentException( "Guava does not provide an Entry type." ); } 
+//            })
+//            .iterator();
     }
     
 }

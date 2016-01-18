@@ -386,7 +386,7 @@ public abstract class ComplexModelTest
         } );
         // check uncommited
         log.info( "Company: " + company );
-        company.moreAddresses.remove( address );
+        assertTrue( company.moreAddresses.remove( address ) );
         log.info( "Company (removed): " + company );
         assertEquals( 0, company.moreAddresses.size() );
         assertEquals( 0, Iterables.size( company.moreAddresses ) );
@@ -421,6 +421,11 @@ public abstract class ComplexModelTest
         log.info( "Company (removed, commited): " + company );
         assertEquals( 2, company.moreAddresses.size() );
         assertEquals( 2, Iterables.size( company.moreAddresses ) );
+        
+        company.moreAddresses.forEach( a -> {
+            assertTrue( a.nr.get() == 13 || a.nr.get() == 14 );
+            assertTrue( !a.street.get().startsWith( "To" ) );
+        });
     }
     
 }
