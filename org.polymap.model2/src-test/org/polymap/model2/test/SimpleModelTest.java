@@ -21,6 +21,7 @@ import org.apache.commons.logging.LogFactory;
 
 import org.polymap.model2.query.ResultSet;
 import org.polymap.model2.runtime.EntityRepository;
+import org.polymap.model2.runtime.EntityRuntimeContext.EntityStatus;
 import org.polymap.model2.runtime.ModelRuntimeException;
 import org.polymap.model2.runtime.UnitOfWork;
 import org.polymap.model2.test.Employee.Rating;
@@ -179,6 +180,22 @@ public abstract class SimpleModelTest
         }
     }
 
+
+    public void testRemoveEntity() throws Exception {
+        Employee employee = uow.createEntity( Employee.class, null );
+        uow.commit();
+        
+        // uow2
+        UnitOfWork uow2 = repo.newUnitOfWork();
+        Employee employee2 = uow2.entity( employee );
+        uow2.removeEntity( employee2 );
+        assertEquals( employee2.status(), EntityStatus.REMOVED );
+        assertTrue( uow2.entity( employee ) == null );
+        
+        uow2.commit();
+        
+        assertTrue( uow2.entity( employee ) == null );
+    }
     
     public void testMixinComputed() throws Exception {
         Employee employee = uow.createEntity( Employee.class, null );

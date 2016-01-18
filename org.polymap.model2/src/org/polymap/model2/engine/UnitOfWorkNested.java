@@ -26,8 +26,6 @@ import java.util.stream.StreamSupport;
 
 import java.io.IOException;
 
-import javax.cache.Cache.Entry;
-
 import com.google.common.base.Throwables;
 import com.google.common.collect.Iterators;
 
@@ -286,10 +284,9 @@ public class UnitOfWorkNested
         
         // reset Entity status
         lifecycle( State.BEFORE_COMMIT );
-        for (Entry<Object,Entity> entry : loaded) {
-            repo.contextOfEntity( entry.getValue() ).resetStatus( EntityStatus.LOADED );
-        }
+        resetStatusLoaded();
         lifecycle( State.AFTER_COMMIT );
+        
         modified.clear();
         commitLock.unlock( true );
     }

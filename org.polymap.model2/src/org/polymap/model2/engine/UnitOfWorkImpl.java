@@ -20,6 +20,7 @@ import static org.polymap.model2.runtime.EntityRuntimeContext.EntityStatus.MODIF
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -29,7 +30,6 @@ import java.util.stream.StreamSupport;
 
 import java.io.IOException;
 
-import javax.cache.Cache.Entry;
 import javax.cache.CacheManager;
 import javax.cache.configuration.MutableConfiguration;
 import javax.cache.expiry.AccessedExpiryPolicy;
@@ -437,16 +437,32 @@ public class UnitOfWorkImpl
         storeUow.commit();
         prepareResult = null;
         
-        // reset Entity status
-        for (Entry<Object,Entity> entry : loaded) {
-            repo.contextOfEntity( entry.getValue() ).resetStatus( EntityStatus.LOADED );
-        }
+        resetStatusLoaded();
         lifecycle( State.AFTER_COMMIT );
         modified.clear();
         commitLock.unlock( true );
     }
 
+    
+    /** 
+     * Reset status of {@link #loaded} after {@link #commit()}.
+     */
+    protected void resetStatusLoaded() {        
+        for (Map.Entry<Object,Entity> entry : modified.entrySet()) {
+            if (entry.getValue().status() == EntityStatus.REMOVED) {
+                loaded.remove( entry.getKey() );
+            }
+            else {
+                repo.contextOfEntity( entry.getValue() ).resetStatus( EntityStatus.LOADED );
+            }
+        }
+        
+        // all Entities in loaded have LOADED state?
+        assert !StreamSupport.stream( loaded.spliterator(), false )
+                .filter( e -> e.getValue().status() != EntityStatus.LOADED ).findAny().isPresent();
+    }
 
+    
     @Override
     public void rollback() throws ModelRuntimeException {
         checkOpen();
