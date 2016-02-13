@@ -144,6 +144,9 @@ public class Expressions {
     /**
      * Queries an {@link Association}. True if the associated {@link Entity} matches
      * the given sub-expression.
+     * <p/>
+     * Use {@link #is(Association, Entity)} or {@link #isAnyOf(Association, Entity...)}
+     * to check if an Association points to an <b>already known Entity</b>.
      */
     public static <T extends Entity> Quantifier the( Association<T> prop, BooleanExpression subExp ) {
         return new TheAssociationQuantifier( prop, subExp );

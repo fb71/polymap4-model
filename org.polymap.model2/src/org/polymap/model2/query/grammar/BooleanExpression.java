@@ -14,6 +14,8 @@
  */
 package org.polymap.model2.query.grammar;
 
+import com.google.common.base.Joiner;
+
 import org.polymap.model2.Composite;
 import org.polymap.model2.Property;
 import org.polymap.model2.PropertyBase;
@@ -62,4 +64,16 @@ public abstract class BooleanExpression {
         return targetProp.get();
     }
 
+    @Override
+    public String toString() {
+        return  opName() + "(" + Joiner.on( ", " ).join( children ) + ")";
+    }
+
+    /**
+     * The name of this operator. Used by {@link #toString()}
+     */
+    protected String opName() {
+        return getClass().getSimpleName();
+    }
+    
 }

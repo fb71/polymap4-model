@@ -47,4 +47,8 @@ public class PropertyMatches<T>
                 : false;
     }
     
+    protected String name() {
+        return "~=";
+    }
+
 }

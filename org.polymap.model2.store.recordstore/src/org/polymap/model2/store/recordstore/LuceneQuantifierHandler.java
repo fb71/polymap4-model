@@ -23,6 +23,7 @@ import org.apache.lucene.search.Query;
 import org.polymap.model2.Entity;
 import org.polymap.model2.query.grammar.BooleanExpression;
 import org.polymap.model2.query.grammar.CompositeCollectionQuantifier;
+import org.polymap.model2.query.grammar.IdPredicate;
 import org.polymap.model2.query.grammar.ManyAssociationQuantifier;
 import org.polymap.model2.query.grammar.Quantifier;
 import org.polymap.model2.query.grammar.TheAssociationQuantifier;
@@ -150,27 +151,38 @@ class LuceneQuantifierHandler
         // see class comment
 
         String subLogIndent = builder.logIndent + "    SUB[" + entityType.getSimpleName() + "] ";
-        RecordQuery recordQuery = new LuceneQueryBuilder( builder.store, subLogIndent ).createQuery( entityType, exp );
         
-        // load just the ID field
-        recordQuery.setFieldSelector( new IRecordFieldSelector() {
-            public boolean test( String key ) {
-                return key.equals( LuceneRecordState.ID_FIELD );
-            }
-        });
-
-        try {
-            ResultSet rs = builder.store.find( recordQuery );
-            Object[] result = new Object[ rs.count() ];
-            int i = 0;
-            for (IRecordState state : rs) {
-                result[i] = state.id();
-                assert result[i] != null;
-            }
-            return result;
+        // optimize IdPredicate
+        if (exp instanceof IdPredicate) {
+            // we know the ids already, no need to execute query
+            // XXX check if entity acrually exists?
+            return ((IdPredicate)exp).ids;
         }
-        catch (Exception e) {
-            throw new ModelRuntimeException( "Exception during association sub-query.", e );
+        
+        // execute sub expression
+        else {
+            RecordQuery recordQuery = new LuceneQueryBuilder( builder.store, subLogIndent ).createQuery( entityType, exp );
+
+            // load just the ID field
+            recordQuery.setFieldSelector( new IRecordFieldSelector() {
+                public boolean test( String key ) {
+                    return key.equals( LuceneRecordState.ID_FIELD );
+                }
+            });
+
+            try {
+                ResultSet rs = builder.store.find( recordQuery );
+                Object[] result = new Object[ rs.count() ];
+                int i = 0;
+                for (IRecordState state : rs) {
+                    result[i] = state.id();
+                    assert result[i] != null;
+                }
+                return result;
+            }
+            catch (Exception e) {
+                throw new ModelRuntimeException( "Exception during association sub-query.", e );
+            }
         }
     }
 

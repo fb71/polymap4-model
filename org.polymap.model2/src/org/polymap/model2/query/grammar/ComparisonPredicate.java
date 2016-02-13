@@ -14,6 +14,8 @@
  */
 package org.polymap.model2.query.grammar;
 
+import com.google.common.base.Joiner;
+
 import org.polymap.model2.engine.TemplateProperty;
 
 /**
@@ -32,6 +34,11 @@ public abstract class ComparisonPredicate<T>
     public ComparisonPredicate( TemplateProperty<T> prop, T value ) {
         this.prop = prop;
         this.value = value;
+    }
+
+    @Override
+    public String toString() {
+        return  Joiner.on( " " ).join( prop.info().getName(), opName(), value.toString() );
     }
 
 }

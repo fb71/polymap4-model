@@ -14,6 +14,8 @@
  */
 package org.polymap.model2.query.grammar;
 
+import com.google.common.base.Joiner;
+
 import org.polymap.model2.Composite;
 
 /**
@@ -41,6 +43,16 @@ public class Disjunction
             }
         }
         return false;
+    }
+    
+    @Override
+    public String toString() {
+        return "(" + Joiner.on( " " + opName() + " " ).join( children ) + ")";
+    }
+
+    @Override
+    protected String opName() {
+        return "OR";
     }
 
 }

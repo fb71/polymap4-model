@@ -34,5 +34,9 @@ public class PropertyNotEquals<T>
         Object propValue = propValue( target, prop );
         return !value.equals( propValue );
     }
-    
+
+    protected String name() {
+        return "!=";
+    }
+
 }

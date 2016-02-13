@@ -35,5 +35,9 @@ public class PropertyEquals<T>
         Property<T> targetProp = targetProp( target, prop );
         return value.equals( targetProp.get() );
     }
-    
+
+    protected String name() {
+        return "==";
+    }
+
 }

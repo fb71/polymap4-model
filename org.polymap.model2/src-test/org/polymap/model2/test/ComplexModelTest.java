@@ -375,7 +375,7 @@ public abstract class ComplexModelTest
 //    }
     
 
-    public void testCompositeCollectionElementRemove() {
+    public void _testCompositeCollectionElementRemove() {
         Company company = uow.createEntity( Company.class, null );
         Address address = company.moreAddresses.createElement( new ValueInitializer<Address>() {
             public Address initialize( Address value ) throws Exception {

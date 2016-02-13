@@ -35,4 +35,8 @@ public class Negation
         return !children[0].evaluate( target );
     }
     
+    protected String name() {
+        return "NOT";
+    }
+
 }

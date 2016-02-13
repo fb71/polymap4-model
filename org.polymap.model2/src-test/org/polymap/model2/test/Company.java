@@ -31,6 +31,8 @@ import org.polymap.model2.Property;
 public class Company
         extends Entity {
 
+    public static Company                   TYPE;
+    
     protected Property<String>              name;
     
     @Nullable

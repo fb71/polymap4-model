@@ -17,6 +17,7 @@ package org.polymap.model2.test;
 import static org.polymap.model2.query.Expressions.and;
 import static org.polymap.model2.query.Expressions.anyOf;
 import static org.polymap.model2.query.Expressions.eq;
+import static org.polymap.model2.query.Expressions.id;
 import static org.polymap.model2.query.Expressions.is;
 import static org.polymap.model2.query.Expressions.matches;
 import static org.polymap.model2.query.Expressions.the;
@@ -135,6 +136,7 @@ public abstract class ComplexQueryTest
         composite();
         compositeCollection();
         associationIs();
+        associationIs2();
         association();
         manyAssociationContains();
     }
@@ -194,6 +196,13 @@ public abstract class ComplexQueryTest
                 .execute();
         assertEquals( 1, rs.size() );
         assertEquals( 1, Iterables.size( rs ) );
+    }
+
+    
+    protected void associationIs2() {
+        assertEquals( 1, uow.query( Company.class )
+                .where( the( Company.TYPE.chief, id( ulli ) ) )
+                .execute().size() );
     }
 
     
