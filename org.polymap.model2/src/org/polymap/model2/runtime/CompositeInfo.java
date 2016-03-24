@@ -67,7 +67,7 @@ public interface CompositeInfo<T extends Composite> {
 
     public Collection<PropertyInfo> getProperties();
 
-    public PropertyInfo getProperty( String name );
+    public PropertyInfo<T> getProperty( String name );
 
 //    /**
 //     * Provides information of the underlying store.

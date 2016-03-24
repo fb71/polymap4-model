@@ -28,5 +28,4 @@ import org.polymap.model2.Property;
  */
 public abstract class TypedValueInitializer<T>
         implements ValueInitializer<T> {
-
 }

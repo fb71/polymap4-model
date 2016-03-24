@@ -24,7 +24,7 @@ import org.polymap.model2.runtime.ConcurrentEntityModificationException;
 import org.polymap.model2.runtime.EntityRepository;
 import org.polymap.model2.runtime.UnitOfWork;
 import org.polymap.model2.runtime.ValueInitializer;
-import org.polymap.model2.store.OptimisticLocking;
+import org.polymap.model2.runtime.locking.OptimisticLocking;
 import org.polymap.model2.store.recordstore.RecordStoreAdapter;
 import org.polymap.model2.test.Employee;
 import org.polymap.model2.test.SimpleModelTest;

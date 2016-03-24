@@ -1,6 +1,6 @@
 /* 
  * polymap.org
- * Copyright (C) 2012-2014, Falko Bräutigam. All rights reserved.
+ * Copyright (C) 2012-2016, Falko Bräutigam. All rights reserved.
  *
  * This is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as
@@ -12,17 +12,11 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
  */
-package org.polymap.model2.runtime.event;
+package org.polymap.model2.runtime.locking;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Supplier;
 
-import java.lang.ref.PhantomReference;
-import java.lang.ref.Reference;
-import java.lang.ref.ReferenceQueue;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -33,105 +27,113 @@ import org.polymap.model2.ManyAssociation;
 import org.polymap.model2.Property;
 import org.polymap.model2.PropertyConcern;
 import org.polymap.model2.PropertyConcernBase;
+import org.polymap.model2.runtime.EntityRepository;
 import org.polymap.model2.runtime.UnitOfWork;
 import org.polymap.model2.runtime.ValueInitializer;
 
 /**
- *
- * @deprecated Just an idea. Don't use yet!
+ * Provides base abstractions of pessimistic locking of {@link Entity}s accessed from
+ * different {@link UnitOfWork} (not Thread!) instances.
+ * <p>
+ * <b>Beware</b>: Not thoroughly tested yet. Implementation currently uses polling
+ * and {@link WeakReference} to get informed about the end of an {@link UnitOfWork}.
+ * <p>
+ * Implementation uses one global map for all locks. This map is filled with
+ * {@link EntityLock} instances from all {@link EntityRepository} instances of the
+ * lifetime of the JVM. Entries are never evicted from this global map.
+ * 
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */
-public class PessimisticLocking
+public abstract class PessimisticLocking
         extends PropertyConcernBase
-        implements PropertyConcern, ManyAssociation {
+        implements PropertyConcern, ManyAssociation/*, Association*/ {
 
     private static final Log log = LogFactory.getLog( PessimisticLocking.class );
 
     private static ConcurrentMap<EntityKey,EntityLock>  locks = new MapMaker().concurrencyLevel( 4 ).initialCapacity( 256 ).makeMap();
     
-    private enum AccessType {
+    protected enum AccessMode {
         READ, WRITE
     }
+
+    /**
+     * 
+     *
+     * @param uow
+     */
+    public static void notifyClosed( UnitOfWork uow ) {
+        locks.forEach( (key, lock) -> lock.checkRelease( uow ) );
+    }
+    
+    
+    // instance *******************************************
     
     @Override
     public Object get() {
-        checkWait( AccessType.READ );
-        Object result = ((Property)delegate).get();
-        return result;
+        lock( AccessMode.READ );
+        return ((Property)delegate).get();
     }
 
     
     @Override
     public Object createValue( ValueInitializer initializer ) {
-        checkWait( AccessType.WRITE );
+        lock( AccessMode.WRITE );
         return ((Property)delegate).createValue( initializer );
     }
 
     
     @Override
     public void set( Object value ) {
-        checkWait( AccessType.WRITE );
+        lock( AccessMode.WRITE );
         ((Property)delegate).set( value );
     }
 
     
     @Override
     public boolean add( Object e ) {
-       checkWait( AccessType.WRITE );
+       lock( AccessMode.WRITE );
        return ((ManyAssociation)delegate).add( e );
     }
 
     
-    protected void checkWait( AccessType accessType ) {
+    protected void lock( AccessMode accessMode ) {
         UnitOfWork uow = context.getUnitOfWork();
-        Entity entity = context.getCompositePart( Entity.class );
+        Entity entity = context.getEntity();
         EntityKey key = new EntityKey( entity );
         
-        EntityLock entityLock = locks.computeIfAbsent( key, k -> new EntityLock() );
-        entityLock.lock( uow, accessType );
-        
-//        if (accessType.equals( AccessType.READ )) {
-//            entityLock.readLock().lock();
-//        }
-//        else if (accessType.equals( AccessType.WRITE )) {
-//            entityLock.writeLock().lock();
-//        }
-//        else {
-//            throw new IllegalStateException( "Unknown accessType: " + accessType );
-//        }
+        EntityLock entityLock = locks.computeIfAbsent( key, k -> newLock( k, entity ) );
+        entityLock.aquire( uow, accessMode );
     }
 
+    
+    protected abstract EntityLock newLock( EntityKey key, Entity entity );
 
+    
     /**
      * 
      */
-    protected class EntityLock {
-        
-        private List<Reference<UnitOfWork>> uows = new ArrayList();
-        
-        private ReferenceQueue      queue = new ReferenceQueue();
-                
-        private ReadWriteLock       lock = new ReentrantReadWriteLock();
-    
-        public synchronized void lock( UnitOfWork uow, AccessType accessType ) {
-            throw new RuntimeException( "not yet implemented" );
-//            PhantomReference
-//            for (Reference<UnitOfWork> ref : uows) {
-//                if (ref.
-//            }
-        }
-    }
+    protected abstract class EntityLock {
 
-    
-    protected class UowReference
-            extends PhantomReference<UnitOfWork> {
+        public abstract void aquire( UnitOfWork uow, AccessMode accessMode );
         
-        private EntityLock      entityLock;
+        public abstract void checkRelease( UnitOfWork uow );
         
-        public UowReference( UnitOfWork referent, ReferenceQueue<? super UnitOfWork> q ) {
-            super( referent, q );
+        protected void await( Supplier<Boolean> condition, AccessMode mode ) {
+            // FIXME polling! wait that GC reclaimed readers and writer
+            // a writer has read lock too, so we avoid writer check
+            while (!condition.get()) {
+                log.warn( Thread.currentThread().getName() + ": await lock: " + mode + " on: " + context.getEntity().id() );
+                try { 
+                    wait( 100 );
+                    cleanStaleHolders();    
+                } 
+                catch (InterruptedException e) {
+                }
+            }
         }
-
+        
+        protected void cleanStaleHolders() {
+        }
     }
 
     

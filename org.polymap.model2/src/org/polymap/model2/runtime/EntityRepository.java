@@ -28,6 +28,7 @@ import org.polymap.model2.engine.cache.SimpleCacheManager;
 import org.polymap.model2.runtime.config.ConfigurationFactory;
 import org.polymap.model2.runtime.config.Mandatory;
 import org.polymap.model2.runtime.config.Property;
+import org.polymap.model2.runtime.locking.CommitLockStrategy;
 import org.polymap.model2.store.StoreSPI;
 
 /**

@@ -12,7 +12,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * Lesser General Public License for more details.
  */
-package org.polymap.model2.store;
+package org.polymap.model2.runtime.locking;
 
 import static java.util.Collections.singletonList;
 
@@ -27,6 +27,14 @@ import org.polymap.model2.Entity;
 import org.polymap.model2.query.Query;
 import org.polymap.model2.runtime.ConcurrentEntityModificationException;
 import org.polymap.model2.runtime.EntityRuntimeContext.EntityStatus;
+import org.polymap.model2.store.CloneCompositeStateSupport;
+import org.polymap.model2.store.CompositeState;
+import org.polymap.model2.store.CompositeStateReference;
+import org.polymap.model2.store.StoreDecorator;
+import org.polymap.model2.store.StoreResultSet;
+import org.polymap.model2.store.StoreRuntimeContext;
+import org.polymap.model2.store.StoreSPI;
+import org.polymap.model2.store.StoreUnitOfWork;
 
 /**
  * This {@link StoreDecorator} provides a simple check for concurrent modifications

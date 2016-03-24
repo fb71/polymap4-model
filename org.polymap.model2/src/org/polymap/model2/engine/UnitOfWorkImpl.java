@@ -46,11 +46,11 @@ import org.polymap.model2.engine.cache.SimpleCache;
 import org.polymap.model2.query.Query;
 import org.polymap.model2.query.ResultSet;
 import org.polymap.model2.query.grammar.BooleanExpression;
-import org.polymap.model2.runtime.CommitLockStrategy;
 import org.polymap.model2.runtime.ConcurrentEntityModificationException;
 import org.polymap.model2.runtime.EntityRuntimeContext.EntityStatus;
 import org.polymap.model2.runtime.Lifecycle;
 import org.polymap.model2.runtime.Lifecycle.State;
+import org.polymap.model2.runtime.locking.CommitLockStrategy;
 import org.polymap.model2.runtime.ModelRuntimeException;
 import org.polymap.model2.runtime.UnitOfWork;
 import org.polymap.model2.runtime.ValueInitializer;
@@ -480,6 +480,16 @@ public class UnitOfWorkImpl
 
     public void close() {
         if (isOpen()) {
+//            // detach loaded Entities in order to avoid leaks
+//            // https://github.com/Polymap4/polymap4-model/issues/10
+//            for (Cache.Entry<Object,Entity> entry : loaded) {
+//                try {
+//                    InstanceBuilder.contextField.set( entry.getValue(), null );
+//                }
+//                catch (Exception e) {
+//                    throw new RuntimeException( e );
+//                }
+//            }
             commitLock.unlock( false );
             storeUow.close();
             repo = null;
@@ -490,7 +500,7 @@ public class UnitOfWorkImpl
         }
     }
 
-
+    @Override
     protected void finalize() throws Throwable {
         close();
     }
