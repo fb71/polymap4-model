@@ -238,12 +238,6 @@ public class FeatureStoreUnitOfWork
 
 
     @Override
-    public boolean evaluate( Object entityState, Object expression ) {
-        return ((Filter)expression).evaluate( entityState );
-    }
-
-
-    @Override
     public void prepareCommit( Iterable<Entity> loaded )
     throws IOException, ConcurrentEntityModificationException {
         assert tx == null;

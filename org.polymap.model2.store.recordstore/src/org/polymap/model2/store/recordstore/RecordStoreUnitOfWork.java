@@ -188,12 +188,6 @@ public class RecordStoreUnitOfWork
 
 
     @Override
-    public boolean evaluate( Object entityState, Object expression ) {
-        throw new RuntimeException( "Query expressions not yet supported: " + expression );
-    }
-
-
-    @Override
     public void prepareCommit( Iterable<Entity> loaded )
             throws IOException, ConcurrentEntityModificationException {
         assert tx == null;

@@ -92,10 +92,6 @@ public abstract class StoreDecorator
             return suow.executeQuery( query );
         }
 
-        public boolean evaluate( Object entityState, Object expression ) {
-            return suow.evaluate( entityState, expression );
-        }
-
         public void commit() {
             suow.commit();
         }

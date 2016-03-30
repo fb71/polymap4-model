@@ -37,8 +37,7 @@ public class FilterWrapper
 
     @Override
     public boolean evaluate( Composite target ) {
-        // XXX Auto-generated method stub
-        throw new RuntimeException( "not yet implemented." );
+        return filter.evaluate( target.state() );
     }
 
 }

@@ -15,7 +15,6 @@
 package org.polymap.model2.store;
 
 import org.polymap.model2.Entity;
-import org.polymap.model2.engine.UnitOfWorkImpl;
 import org.polymap.model2.query.Query;
 import org.polymap.model2.runtime.UnitOfWork;
 
@@ -58,17 +57,6 @@ public interface StoreUnitOfWork {
      */
     public StoreResultSet executeQuery( Query query );
     
-    /**
-     * Evaluate the given store specific expression against the given Composite
-     * state. This method is used by {@link UnitOfWorkImpl} to blend a query result
-     * with the locally modified features.
-     * 
-     * @param entityState
-     * @param expression
-     * @return True if expression is true for given entity.
-     */
-    public boolean evaluate( Object entityState, Object expression );
-
     public void prepareCommit( Iterable<Entity> loaded ) throws Exception;
     
     public void commit();
