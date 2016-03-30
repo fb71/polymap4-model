@@ -17,11 +17,6 @@ package org.polymap.model2.test;
 import java.util.Date;
 
 import org.polymap.model2.Association;
-import org.polymap.model2.BidiAssociationConcern;
-import org.polymap.model2.BidiAssociationName;
-import org.polymap.model2.Computed;
-import org.polymap.model2.ComputedBidiAssocation;
-import org.polymap.model2.Concerns;
 import org.polymap.model2.Defaults;
 import org.polymap.model2.NameInStore;
 import org.polymap.model2.Nullable;
@@ -60,12 +55,6 @@ public class Employee
     public Property<Rating>         rating;
 
     @Nullable
-    @Concerns(BidiAssociationConcern.class)
-    @BidiAssociationName( "employees" )
     public Association<Company>     company;
-    
-    @Computed(ComputedBidiAssocation.class)
-    @BidiAssociationName( "employees" )
-    public Property<Company>        computedCompany;
     
 }

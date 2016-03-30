@@ -1,6 +1,6 @@
 /* 
  * polymap.org
- * Copyright (C) 2012-2014, Falko Bräutigam. All rights reserved.
+ * Copyright (C) 2012-2016, Falko Bräutigam. All rights reserved.
  *
  * This is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as
@@ -151,72 +151,72 @@ public abstract class ComplexModelTest
     }
 
     
-    public void testBidiAssociation() {
-        // create entity
-        Company company = uow.createEntity( Company.class, null );
-        Employee employee = uow.createEntity( Employee.class, null );
-
-        // set
-        employee.company.set( company );
-        assertSame( company, employee.company.get() );
-
-        // check back reference
-        assertEquals( 1, company.employees.size() );
-        assertEquals( employee, Iterables.getOnlyElement( company.employees ) );
-        assertSame( employee, Iterables.getOnlyElement( company.employees ) );
-
-        // remove
-        employee.company.set( null );
-
-        // check back reference
-        assertEquals( 0, company.employees.size() );
-    }
-
-    
-    public void testBidiManyAssociation() {
-        // create entity
-        Male man = uow.createEntity( Male.class, null );
-        Male man2 = uow.createEntity( Male.class, null );
-        Female woman = uow.createEntity( Female.class, null );
-
-        // set
-        man.friends.add( woman );
-
-        // check back references
-        assertEquals( 1, man.friends.size() );
-        assertEquals( 1, woman.friends.size() );
-        assertSame( woman, Iterables.getOnlyElement( man.friends ) );
-        assertSame( man, Iterables.getOnlyElement( woman.friends ) );
-        
-        // remove
-        woman.friends.remove( man );
-        assertEquals( 0, man.friends.size() );
-        assertEquals( 0, woman.friends.size() );
-        
-        // man2
-        man.friends.add( woman );
-        woman.friends.add( man2 );
-        assertEquals( 1, man.friends.size() );
-        assertEquals( 1, man2.friends.size() );
-        assertEquals( 2, woman.friends.size() );
-    }
-
-    
-    public void testComputedBidiAssociation() {
-        // create entity
-        Company company = uow.createEntity( Company.class, null );
-        Employee employee = uow.createEntity( Employee.class, null );
-
-        // set
-        company.employees.add( employee );
-
-        // check back reference; uncommitted
-        assertSame( company, employee.computedCompany.get() );
-        uow.commit();
-
-        // check back reference; committed
-        assertSame( company, employee.computedCompany.get() );
-    }
+//    public void testBidiAssociation() {
+//        // create entity
+//        Company company = uow.createEntity( Company.class, null );
+//        Employee employee = uow.createEntity( Employee.class, null );
+//
+//        // set
+//        employee.company.set( company );
+//        assertSame( company, employee.company.get() );
+//
+//        // check back reference
+//        assertEquals( 1, company.employees.size() );
+//        assertEquals( employee, Iterables.getOnlyElement( company.employees ) );
+//        assertSame( employee, Iterables.getOnlyElement( company.employees ) );
+//
+//        // remove
+//        employee.company.set( null );
+//
+//        // check back reference
+//        assertEquals( 0, company.employees.size() );
+//    }
+//
+//    
+//    public void testBidiManyAssociation() {
+//        // create entity
+//        Male man = uow.createEntity( Male.class, null );
+//        Male man2 = uow.createEntity( Male.class, null );
+//        Female woman = uow.createEntity( Female.class, null );
+//
+//        // set
+//        man.friends.add( woman );
+//
+//        // check back references
+//        assertEquals( 1, man.friends.size() );
+//        assertEquals( 1, woman.friends.size() );
+//        assertSame( woman, Iterables.getOnlyElement( man.friends ) );
+//        assertSame( man, Iterables.getOnlyElement( woman.friends ) );
+//        
+//        // remove
+//        woman.friends.remove( man );
+//        assertEquals( 0, man.friends.size() );
+//        assertEquals( 0, woman.friends.size() );
+//        
+//        // man2
+//        man.friends.add( woman );
+//        woman.friends.add( man2 );
+//        assertEquals( 1, man.friends.size() );
+//        assertEquals( 1, man2.friends.size() );
+//        assertEquals( 2, woman.friends.size() );
+//    }
+//
+//    
+//    public void testComputedBidiAssociation() {
+//        // create entity
+//        Company company = uow.createEntity( Company.class, null );
+//        Employee employee = uow.createEntity( Employee.class, null );
+//
+//        // set
+//        company.employees.add( employee );
+//
+//        // check back reference; uncommitted
+//        assertSame( company, employee.computedCompany.get() );
+//        uow.commit();
+//
+//        // check back reference; committed
+//        assertSame( company, employee.computedCompany.get() );
+//    }
 
     
     public void testCompositeProperty() {

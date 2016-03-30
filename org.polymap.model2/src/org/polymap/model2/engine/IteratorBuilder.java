@@ -15,15 +15,17 @@
 package org.polymap.model2.engine;
 
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
 /**
  * Support for aggregated operations based on a raw {@link Iterator} using java.util
  * {@link Function} and {@link Predicate}. Used by {@link UnitOfWorkImpl} which
- * operates on store Iterators instead of steamable Collection. Also avoid dependency
- * on Guava.
+ * operates on store Iterators instead of (streamable) Collection. Also avoid
+ * dependency on Guava.
  *
+ * @deprecated
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */
 public abstract class IteratorBuilder<T>
@@ -91,7 +93,18 @@ public abstract class IteratorBuilder<T>
 
             @Override
             public T next() {
-                return isFirst ? (T)delegate.next() : second.next();
+                if (!hasNext()) {
+                    throw new NoSuchElementException();
+                }
+                if (isFirst) {
+                    try {
+                        return (T)delegate.next();
+                    }
+                    catch (NoSuchElementException e) {
+                        // ignore, check second
+                    }
+                }
+                return second.next();
             }
         };
     }

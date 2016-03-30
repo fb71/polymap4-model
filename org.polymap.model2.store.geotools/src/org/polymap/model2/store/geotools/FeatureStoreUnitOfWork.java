@@ -59,6 +59,7 @@ import org.polymap.core.runtime.Closer;
 
 import org.polymap.model2.Entity;
 import org.polymap.model2.NameInStore;
+import org.polymap.model2.query.Expressions;
 import org.polymap.model2.query.Query;
 import org.polymap.model2.runtime.ConcurrentEntityModificationException;
 import org.polymap.model2.runtime.EntityRuntimeContext.EntityStatus;
@@ -176,7 +177,9 @@ public class FeatureStoreUnitOfWork
 
     @Override
     public StoreResultSet executeQuery( Query query ) {
-        assert query.expression == null || query.expression instanceof FilterWrapper : "Wrong query expression type: " + query.expression;
+        assert query.expression == null 
+                || query.expression == Expressions.TRUE 
+                || query.expression instanceof FilterWrapper : "Wrong query expression type: " + query.expression;
         try {
             // schema
             FeatureSource fs = featureSource( query.resultType() );
@@ -184,7 +187,7 @@ public class FeatureStoreUnitOfWork
 
             // features
             org.geotools.data.Query featureQuery = new org.geotools.data.Query( schema.getName().getLocalPart() );
-            featureQuery.setFilter( query.expression != null 
+            featureQuery.setFilter( query.expression != null && query.expression != Expressions.TRUE 
                     ? ((FilterWrapper)query.expression).filter 
                     : Filter.INCLUDE );
             // load all properties as we actually use the features via the #found buffer

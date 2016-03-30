@@ -15,25 +15,28 @@
 package org.polymap.model2;
 
 import static org.polymap.model2.BidiBackAssociationFinder.findBackAssociation;
-
+import static org.polymap.model2.query.Expressions.anyOf;
+import static org.polymap.model2.query.Expressions.id;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.polymap.model2.query.Expressions;
+import org.polymap.model2.query.Query;
 import org.polymap.model2.query.ResultSet;
 import org.polymap.model2.runtime.EntityRepository;
 import org.polymap.model2.runtime.UnitOfWork;
 
 /**
- * Provides a computed back reference of a bidirectional {@link Association} or
- * {@link ManyAssociation}.
+ * Provides a computed back reference of a bidirectional {@link ManyAssociation}.
+ * <p/>
+ * Not cached. Every call of {@link #get()} executes a {@link Query}.
  * 
  * @see BidiAssociationName
  * @see BidiAssociationConcern
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */
 public class ComputedBidiAssocation<T extends Entity>
-        extends ComputedProperty<T> {
+        extends ComputedAssociation<T> {
 
     private static Log log = LogFactory.getLog( ComputedBidiAssocation.class );
 
@@ -48,18 +51,10 @@ public class ComputedBidiAssocation<T extends Entity>
         // ManyAssociation
         if (backAssoc instanceof ManyAssociation) {
             ResultSet<T> results = uow.query( (Class<T>)info.getType() )
-                    .where( Expressions.anyOf( ((ManyAssociation)backAssoc), Expressions.id( (Entity)composite ) ) )
+                    .where( anyOf( ((ManyAssociation)backAssoc), id( (Entity)composite ) ) )
                     .execute();
             assert results.size() <= 1;
-            return results.stream().findAny().get();
-        }
-        // Association
-        else if (backAssoc instanceof Association) {
-            ResultSet<T> results = uow.query( (Class<T>)info.getType() )
-                    .where( Expressions.the( ((Association)backAssoc), Expressions.id( (Entity)composite ) ) )
-                    .execute();
-            assert results.size() <= 1;
-            return results.stream().findAny().get();
+            return results.stream().findAny().orElse( null );
         }
         else {
             throw new IllegalStateException( "Unknown backAssoc type: " + backAssoc.getClass().getSimpleName() );

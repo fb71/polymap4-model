@@ -14,16 +14,14 @@
  */
 package org.polymap.model2.engine;
 
+import static com.google.common.collect.Iterators.concat;
+import static com.google.common.collect.Iterators.filter;
+import static com.google.common.collect.Iterators.transform;
 import static java.util.Collections.singletonList;
 import static org.polymap.model2.runtime.EntityRuntimeContext.EntityStatus.CREATED;
 import static org.polymap.model2.runtime.EntityRuntimeContext.EntityStatus.MODIFIED;
 
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
-
 import java.io.IOException;
 
 import com.google.common.base.Throwables;
@@ -118,83 +116,42 @@ public class UnitOfWorkNested
     @Override
     public <T extends Entity> Query<T> query( final Class<T> entityClass ) {
         return new Query<T>( entityClass ) {
+            @Override
             public ResultSet<T> execute() {
+                // unmodified ***
                 final ResultSet<T> parentRs = parent.query( entityClass )
                         .where( expression )
                         .maxResults( maxResults )
                         .firstResult( firstResult )
                         .execute();
-
-                // unmodified
-                IteratorBuilder<T> unmodifiedResults = IteratorBuilder.on( parentRs )
-                        .map( entity -> entity( entityClass, entity.id() ) )
-                        .filter( entity -> {
-                            EntityStatus status = entity.status();
+                // adopt entities
+                Iterator<T> results = transform( parentRs.iterator(),
+                        entity -> entity( entityClass, entity.id() ) );
+                // filter
+                Iterator<T> unmodifiedResults = filter( results,
+                        entity -> {
+                            EntityStatus status = entity != null ? entity.status() : EntityStatus.REMOVED;
                             assert status != EntityStatus.CREATED; 
                             return status == EntityStatus.LOADED;                            
                         });
-                
-                // new/updated states -> pre-process
-                IteratorBuilder<T> modifiedResults = (IteratorBuilder<T>)IteratorBuilder.on( modified.values() )
-                        .filter( entity -> {
-                            if (entity.getClass().equals( entityClass ) 
-                                    && (entity.status() == CREATED || entity.status() == MODIFIED )) {
-                                if (expression == null) {
-                                    return true;
-                                }
-                                else if (expression instanceof BooleanExpression) {
-                                    return expression.evaluate( entity );
-                                }
-                                else {
-                                    return storeUow.evaluate( entity.state(), expression );
-                                }
-                            }
-                            return false;
-                        });
-                
+
+                // modified ***
+                assert expression instanceof BooleanExpression;
+                Iterator<T> modifiedResults = (Iterator<T>)filter( modified.values().iterator(),
+                        entity -> entity.getClass().equals( entityClass ) 
+                                    && (entity.status() == CREATED || entity.status() == MODIFIED )
+                                    && expression.evaluate( entity ) );
+
                 // ResultSet, caching the ids for subsequent runs
-                return new ResultSet<T>() {
-
-                    /** null after one full run */
-                    private Iterator<T>     results = unmodifiedResults.concat( modifiedResults );
-                    private List<Object>    cachedIds = new ArrayList( 1024 );
-                    /** The cached cachedSize; not synchronized */
-                    private int             cachedSize = -1;
-
+                return new CachingResultSet<T>( concat( unmodifiedResults, modifiedResults ) ) {
                     @Override
-                    public Iterator<T> iterator() {
-                        return new Iterator<T>() {
-                            int index = -1;
-                            @Override
-                            public boolean hasNext() {
-                                if (index+1 < cachedIds.size() || (results != null && results.hasNext())) {
-                                    return true;
-                                }
-                                else {
-                                    parentRs.close();
-                                    results = null;
-                                    return false;
-                                }
-                            }
-                            @Override
-                            public T next() {
-                                if (++index < cachedIds.size()) {
-                                    return entity( entityClass, cachedIds.get( index ), null );
-                                }
-                                else {
-                                    assert index == cachedIds.size() : "index == cachedIds.size(): " +  index + ", " + cachedIds.size();
-                                    T result = results.next();
-                                    cachedIds.add( result.id() );
-                                    return result;
-                                }
-                            }
-                        };
+                    protected T entity( Object id ) {
+                        return UnitOfWorkNested.this.entity( entityClass, id, null );
                     }
-                    
                     @Override
                     public int size() {
                         if (cachedSize == -1) {
-                            cachedSize = results == null
+                            cachedSize = delegate == null
                                     ? cachedIds.size()
                                     : modified.isEmpty() 
                                             ? parentRs.size()
@@ -202,18 +159,10 @@ public class UnitOfWorkNested
                         }
                         return cachedSize;
                     }
-                    
-                    @Override
-                    public Stream<T> stream() {
-                        // XXX use cachedIds.size() if available
-                        return StreamSupport.stream( spliterator(), false );
-                    }
-
                     @Override
                     public void close() {
                         parentRs.close();
-                        results = null;
-                        cachedIds = null;
+                        super.close();
                     }
                 };
             }

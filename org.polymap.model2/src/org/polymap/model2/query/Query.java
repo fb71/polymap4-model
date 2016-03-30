@@ -14,6 +14,8 @@
  */
 package org.polymap.model2.query;
 
+import static org.polymap.model2.query.Expressions.and;
+
 import org.polymap.model2.Entity;
 import org.polymap.model2.query.grammar.BooleanExpression;
 import org.polymap.model2.runtime.UnitOfWork;
@@ -27,7 +29,7 @@ public abstract class Query<T extends Entity> {
 
     public Class<T>             resultType;
 
-    public BooleanExpression    expression;
+    public BooleanExpression    expression = Expressions.TRUE;
 
     public int                  firstResult = 0;
 
@@ -72,6 +74,7 @@ public abstract class Query<T extends Entity> {
      * @return this
      */
     public Query<T> where( @SuppressWarnings("hiding") BooleanExpression expression ) {
+        assert expression != null : "Null expression is not (no longer) allowed.";
         this.expression = expression;
         return this;
     }
@@ -87,7 +90,7 @@ public abstract class Query<T extends Entity> {
     public Query<T> andWhere( @SuppressWarnings("hiding") BooleanExpression expression ) {
         assert this.expression != null : "Set expression via #where() before calling #and().";
         assert this.expression instanceof BooleanExpression : "Adding more expressions is supported for BooleanExpression only.";
-        this.expression = Expressions.and( (this.expression), expression );
+        where( and( this.expression, expression ) );
         return this;
     }
     

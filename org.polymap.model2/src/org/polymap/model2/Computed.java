@@ -1,6 +1,6 @@
 /* 
  * polymap.org
- * Copyright 2012, Falko Bräutigam. All rights reserved.
+ * Copyright 2012-2016, Falko Bräutigam. All rights reserved.
  *
  * This is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as
@@ -21,8 +21,10 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Denotes a computed {@link Property}. The argument of the annotation is the class
- * that implements {@link ComputedProperty} which provides the access code for this
+ * Denotes a computed {@link Property}, {@link Association} or
+ * {@link ManyAssociation}. The argument of the annotation is the class that
+ * implements {@link ComputedProperty}, {@link ComputedAssociation} or
+ * {@link ComputedManyAssociation} which provides the computation code of this
  * property.
  * 
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
@@ -32,6 +34,6 @@ import java.lang.annotation.Target;
 @Documented
 public @interface Computed {
 
-    public Class<? extends ComputedProperty> value();
+    public Class<? extends ComputedPropertyBase> value();
 
 }

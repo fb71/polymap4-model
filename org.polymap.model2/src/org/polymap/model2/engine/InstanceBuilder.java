@@ -36,7 +36,7 @@ import org.polymap.model2.CollectionProperty;
 import org.polymap.model2.CollectionPropertyConcern;
 import org.polymap.model2.Composite;
 import org.polymap.model2.Computed;
-import org.polymap.model2.ComputedProperty;
+import org.polymap.model2.ComputedPropertyBase;
 import org.polymap.model2.Concerns;
 import org.polymap.model2.ManyAssociation;
 import org.polymap.model2.Property;
@@ -57,7 +57,6 @@ import org.polymap.model2.store.StoreProperty;
 
 /**
  * 
- *
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */
 public final class InstanceBuilder {
@@ -90,7 +89,7 @@ public final class InstanceBuilder {
             concernDelegateField = PropertyConcernBase.class.getDeclaredField( "delegate" );
             concernDelegateField.setAccessible( true );
             
-            computedPropertyInitMethod = ComputedProperty.class.getDeclaredMethod( "init", PropertyInfo.class, Composite.class );
+            computedPropertyInitMethod = ComputedPropertyBase.class.getDeclaredMethod( "init", PropertyInfo.class, Composite.class );
             computedPropertyInitMethod.setAccessible( true );
         }
         catch (Exception e) {
@@ -148,7 +147,6 @@ public final class InstanceBuilder {
      * {@link InstanceBuilder} when the value is accessed.
      */
     protected void initProperties( Composite instance, CompositeState state ) throws Exception {
-//        StoreSPI store = context.getRepository().getStore();
         CompositeInfo compositeInfo = context.getRepository().infoOf( instance.getClass() );
         if (compositeInfo == null) {
             log.info( "Mixin type not declared on Entity type: " + instance.getClass().getName() );
@@ -171,44 +169,42 @@ public final class InstanceBuilder {
                     PropertyInfo info = compositeInfo.getProperty( field.getName() );
                     PropertyBase prop = null;
 
-                    // single property
+                    // Property
                     if (Property.class.isAssignableFrom( field.getType() )) {
                         // Computed
                         if (info.isComputed()) {
                             Computed a = ((PropertyInfoImpl)info).getField().getAnnotation( Computed.class );
                             prop = a.value().newInstance();
                             computedPropertyInitMethod.invoke( prop, info, instance );
-                            // always check modifications, default value, immutable, nullable
-                            prop = new ConstraintsPropertyInterceptor( (Property)prop, (EntityRuntimeContextImpl)context );
                         }
+                        // Composite or primitive
                         else {
                             StoreProperty storeProp = state.loadProperty( info );
-                            // Composite
-                            if (Composite.class.isAssignableFrom( info.getType() )) {
-                                prop = new CompositePropertyImpl( context, storeProp );
-                                prop = new ConstraintsPropertyInterceptor( (Property)prop, (EntityRuntimeContextImpl)context );
-                            }
-                            // primitive type
-                            else {
-                                prop = new PropertyImpl( storeProp );
-                                prop = new ConstraintsPropertyInterceptor( (Property)prop, (EntityRuntimeContextImpl)context );
-                            }
+                            prop = Composite.class.isAssignableFrom( info.getType() )
+                                    ? new CompositePropertyImpl( context, storeProp )
+                                    : new PropertyImpl( storeProp );
                         }
-                        // concerns
+                        // always check modifications, default value, immutable, nullable
+                        prop = new ConstraintsPropertyInterceptor( (Property)prop, (EntityRuntimeContextImpl)context );
                         prop = fieldConcerns( field, prop );
                     }
 
                     // Association
                     else if (Association.class.isAssignableFrom( field.getType() )) {
                         assert info.isAssociation();
-                        // check Computed
+                        // Computed
                         if (info.isComputed()) {
-                            throw new UnsupportedOperationException( "Computed Association is not supported yet: " + propName( field ));
+                            Computed a = ((PropertyInfoImpl)info).getField().getAnnotation( Computed.class );
+                            prop = a.value().newInstance();
+                            computedPropertyInitMethod.invoke( prop, info, instance );
                         }
-                        StoreProperty storeProp = state.loadProperty( info );
-                        prop = new AssociationImpl( context, storeProp );
+                        //
+                        else {
+                            StoreProperty storeProp = state.loadProperty( info );
+                            prop = new AssociationImpl( context, storeProp );
+                        }
+                        // always check modifications, default value, immutable, nullable
                         prop = new ConstraintsAssociationInterceptor( (Association)prop, (EntityRuntimeContextImpl)context );
-                        // concerns
                         prop = fieldConcerns( field, prop );
                     }
 
@@ -218,21 +214,28 @@ public final class InstanceBuilder {
                         assert info.getMaxOccurs() > 1 : "Field has improper @MaxOccurs: " + propName( field );
                         // check Computed
                         if (info.isComputed()) {
-                            throw new UnsupportedOperationException( "Computed ManyAssociation is not supported yet: " + propName( field ));
+                            Computed a = ((PropertyInfoImpl)info).getField().getAnnotation( Computed.class );
+                            prop = a.value().newInstance();
+                            computedPropertyInitMethod.invoke( prop, info, instance );
                         }
-                        StoreCollectionProperty storeProp = (StoreCollectionProperty)state.loadProperty( info );
-                        prop = new ManyAssociationImpl( context, storeProp );
+                        else {
+                            StoreCollectionProperty storeProp = (StoreCollectionProperty)state.loadProperty( info );
+                            prop = new ManyAssociationImpl( context, storeProp );
+                        }
                         prop = new ConstraintsManyAssociationInterceptor( (ManyAssociation)prop, (EntityRuntimeContextImpl)context );
-                        // concerns
-                       prop = fieldConcerns( field, prop );
+                        prop = fieldConcerns( field, prop );
                     }
 
                     // Collection
                     else if (CollectionProperty.class.isAssignableFrom( field.getType() )) {
                         assert info.getMaxOccurs() > 1 : "Field has improper @MaxOccurs: " + propName( field );
                         StoreCollectionProperty storeProp = (StoreCollectionProperty)state.loadProperty( info );
+                        // Computed
+                        if (info.isComputed()) {
+                            throw new UnsupportedOperationException( "Computed CollectionProperty is not supported yet: " + propName( field ));
+                        }
                         // Composite
-                        if (Composite.class.isAssignableFrom( info.getType() )) {
+                        else if (Composite.class.isAssignableFrom( info.getType() )) {
                             prop = new CompositeCollectionPropertyImpl( context, storeProp );                            
                         }
                         // primitive type

@@ -14,18 +14,18 @@
  */
 package org.polymap.model2.engine;
 
+import static com.google.common.collect.Iterators.concat;
+import static com.google.common.collect.Iterators.filter;
+import static com.google.common.collect.Iterators.transform;
 import static org.polymap.model2.runtime.EntityRuntimeContext.EntityStatus.CREATED;
 import static org.polymap.model2.runtime.EntityRuntimeContext.EntityStatus.MODIFIED;
 
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import java.io.IOException;
@@ -50,10 +50,10 @@ import org.polymap.model2.runtime.ConcurrentEntityModificationException;
 import org.polymap.model2.runtime.EntityRuntimeContext.EntityStatus;
 import org.polymap.model2.runtime.Lifecycle;
 import org.polymap.model2.runtime.Lifecycle.State;
-import org.polymap.model2.runtime.locking.CommitLockStrategy;
 import org.polymap.model2.runtime.ModelRuntimeException;
 import org.polymap.model2.runtime.UnitOfWork;
 import org.polymap.model2.runtime.ValueInitializer;
+import org.polymap.model2.runtime.locking.CommitLockStrategy;
 import org.polymap.model2.store.CloneCompositeStateSupport;
 import org.polymap.model2.store.CompositeState;
 import org.polymap.model2.store.StoreResultSet;
@@ -263,79 +263,36 @@ public class UnitOfWorkImpl
                 // we are either not keeping a strong ref to the CompositeStateReferences as they
                 // may contain refs to the states which would kept in memory for the lifetime of
                 // the ResultSet otherwise
-                
+
                 // unmodified
                 final StoreResultSet rs = storeUow.executeQuery( this );
-                IteratorBuilder<T> unmodifiedResults = IteratorBuilder.on( rs )
-                        .map( ref -> entity( entityClass, ref.id(), ref ) )
-                        .filter( entity -> {
-                            EntityStatus status = entity.status();
+                Iterator<T> results = transform( rs,
+                        ref -> entity( entityClass, ref.id(), ref ) );
+                Iterator<T> unmodifiedResults = filter( results,
+                        entity -> {
+                            EntityStatus status = entity != null ? entity.status() : EntityStatus.REMOVED;
                             assert status != EntityStatus.CREATED; 
                             return status == EntityStatus.LOADED;                            
                         });
-                
+
                 // modified
                 // XXX not cached, done for every call to iterator()
-                IteratorBuilder<T> modifiedResults = (IteratorBuilder<T>)IteratorBuilder.on( modified.values() )
-                        .filter( entity -> {
-                            if (entity.getClass().equals( entityClass ) 
-                                    && (entity.status() == CREATED || entity.status() == MODIFIED )) {
-                                if (expression == null) {
-                                    return true;
-                                }
-                                else if (expression instanceof BooleanExpression) {
-                                    return expression.evaluate( entity );
-                                }
-                                else {
-                                    return storeUow.evaluate( entity.state(), expression );
-                                }
-                            }
-                            return false;
-                        });
+                assert expression instanceof BooleanExpression;
+                Iterator<T> modifiedResults = (Iterator<T>)filter( modified.values().iterator(),
+                        entity -> entity.getClass().equals( entityClass ) 
+                                    && (entity.status() == CREATED || entity.status() == MODIFIED )
+                                    && expression.evaluate( entity ) );
 
                 // ResultSet, caching the ids for subsequent runs
-                return new ResultSet<T>() {
-
-                    /** null after one full run */
-                    private Iterator<T>     results = unmodifiedResults.concat( modifiedResults );
-                    private List<Object>    cachedIds = new ArrayList( 1024 );
-                    /** The cached cachedSize; not synchronized */
-                    private int             cachedSize = -1;
-
+                return new CachingResultSet<T>( concat( unmodifiedResults, modifiedResults ) ) {
                     @Override
-                    public Iterator<T> iterator() {
-                        return new Iterator<T>() {
-                            int index = -1;
-                            @Override
-                            public boolean hasNext() {
-                                if (index+1 < cachedIds.size() || (results != null && results.hasNext())) {
-                                    return true;
-                                }
-                                else {
-                                    rs.close();
-                                    results = null;
-                                    return false;
-                                }
-                            }
-                            @Override
-                            public T next() {
-                                if (++index < cachedIds.size()) {
-                                    return entity( entityClass, cachedIds.get( index ), null );
-                                }
-                                else {
-                                    assert index == cachedIds.size() : "index == cachedIds.size(): " +  index + ", " + cachedIds.size();
-                                    T result = results.next();
-                                    cachedIds.add( result.id() );
-                                    return result;
-                                }
-                            }
-                        };
+                    protected T entity( Object id ) {
+                        return UnitOfWorkImpl.this.entity( entityClass, id, null );
                     }
-                    
                     @Override
                     public int size() {
                         if (cachedSize == -1) {
-                            cachedSize = results == null
+                            cachedSize = delegate == null
                                     ? cachedIds.size()
                                     : modified.isEmpty() 
                                             ? rs.size()
@@ -343,25 +300,17 @@ public class UnitOfWorkImpl
                         }
                         return cachedSize;
                     }
-                    
-                    @Override
-                    public Stream<T> stream() {
-                        // XXX use cachedIds.size() if available
-                        return StreamSupport.stream( spliterator(), false );
-                    }
-
                     @Override
                     public void close() {
                         rs.close();
-                        results = null;
-                        cachedIds = null;
+                        super.close();
                     }
                 };
             }
         };
     }
 
-
+    
     @Override
     public UnitOfWork newUnitOfWork() {
         checkOpen();

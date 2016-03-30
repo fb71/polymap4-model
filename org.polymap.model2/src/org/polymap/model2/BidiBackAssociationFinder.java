@@ -50,7 +50,7 @@ public class BidiBackAssociationFinder {
         // find back association
         Collection<PropertyInfo> propInfos = target.info().getProperties();
         List<PropertyInfo> candidates = propInfos.stream()
-                .filter( info -> info.getType().isAssignableFrom( hostType ) )
+                .filter( info -> !info.isComputed() && info.isAssociation() && info.getType().isAssignableFrom( hostType ) )
                 .collect( Collectors.toList() );
 
         PropertyInfo backAssocInfo = null;
@@ -62,7 +62,8 @@ public class BidiBackAssociationFinder {
         else if (candidates.size() > 1) {
             BidiAssociationName assocName = (BidiAssociationName)propInfo.getAnnotation( BidiAssociationName.class );
             if (assocName != null) {
-                backAssocInfo = candidates.stream().filter( i -> i.getName().equals( assocName.value() ) ).findAny()
+                backAssocInfo = candidates.stream()
+                        .filter( i -> i.getName().equals( assocName.value() ) ).findAny()
                         .orElseThrow( () -> new IllegalStateException( "No back assocation found for name: " + assocName.value() ) );
             }
             else {

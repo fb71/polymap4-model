@@ -1,6 +1,6 @@
 /* 
  * polymap.org
- * Copyright (C) 2014-2016, Falko Bräutigam. All rights reserved.
+ * Copyright (C) 2016, the @authors. All rights reserved.
  *
  * This is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as
@@ -14,23 +14,15 @@
  */
 package org.polymap.model2;
 
-import org.polymap.model2.runtime.ValueInitializer;
-
 /**
- * Bases class of computed {@link Property} implementations. See {@link Computed}
+ * Bases class of computed {@link Association} implementations. See {@link Computed}
  * annotation.
  *
- * @see Computed
- * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
+ * @author Falko Bräutigam
  */
-public abstract class ComputedProperty<T>
+public abstract class ComputedAssociation<T extends Entity>
         extends ComputedPropertyBase<T>
-        implements Property<T> {
-
-    @Override
-    public <U extends T> U createValue( ValueInitializer<U> initializer ) {
-        throw new UnsupportedOperationException( "This computed property is immutable." );
-    }
+        implements Association<T> {
 
     @Override
     public void set( T value ) {
@@ -40,7 +32,7 @@ public abstract class ComputedProperty<T>
     @Override
     public String toString() {
         T value = get();
-        return "ComputedProperty[name:" + info().getName() + ",value=" + (value != null ? value.toString() : "null") + "]";
+        return "ComputedAssociation[name:" + info().getName() + ",value=" + (value != null ? value.toString() : "null") + "]";
     }
 
 }
