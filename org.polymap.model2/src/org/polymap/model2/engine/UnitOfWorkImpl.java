@@ -192,8 +192,8 @@ public class UnitOfWorkImpl
             final Object id, 
             final Supplier<CompositeState> preloaded ) {
         
-        assert entityClass != null;
-        assert id != null;
+        assert entityClass != null : "Given entity Class is null.";
+        assert id != null : "Given Id is null.";
         checkOpen();
         T result = (T)loaded.get( id, new Loader<Object,Entity>() {
             public Entity load( Object key ) throws RuntimeException {

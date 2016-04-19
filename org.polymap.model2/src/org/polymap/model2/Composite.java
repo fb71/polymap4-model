@@ -58,6 +58,7 @@ public abstract class Composite {
      * 
      */
     public CompositeInfo info() {
+        assert context != null : "Entity is detached after UnitOfWork has been closed.";
         return context.getRepository().infoOf( getClass() );
     }
 

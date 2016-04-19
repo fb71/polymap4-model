@@ -32,6 +32,9 @@ public interface Association<T extends Entity>
 
     public void set( T value );
 
+    
+    // Optional *******************************************
+    
     /**
      * If a value is present, invoke the specified consumer with the value,
      * otherwise do nothing.
