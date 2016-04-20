@@ -34,13 +34,17 @@ public interface CollectionProperty<T>
      * Creates a new element and adds it to this collection. For {@link Composite}
      * properties: this method allows the initialize the {@link Composite} value of
      * this property.
+     * <p/>
+     * The {@link ValueInitializer} allows to provide a default value for primitive
+     * types. For {@link Composite} types it gets called to initialize the properties
+     * of the instance, including non-{@link Nullable} properties. In order to create
+     * a <b>sub-class</b> instance of the declared type a non-lambda defined
+     * {@link ValueInitializer} with the actual type parameter must be given.
      * 
      * @see TypedValueInitializer
      * @param initializer The initializer to be called for the prototype of the new
      *        element, or null. For {@link Composite} elements this allows to
      *        initialize the properties, including non-{@link Nullable} properties.
-     *        Use {@link TypedValueInitializer} to create a Composite value of a
-     *        sub-class of the declared type of the Property.
      * @return The value of this property, or a newly created {@link Composite} that
      *         is set as the new value of this property.
      * @throws IllegalStateException If this is not a Composite collection.

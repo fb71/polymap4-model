@@ -14,9 +14,13 @@
  */
 package org.polymap.model2.runtime;
 
+import java.util.Optional;
+
 import java.lang.annotation.Annotation;
+import java.lang.reflect.ParameterizedType;
 
 import org.polymap.model2.Composite;
+import org.polymap.model2.Description;
 import org.polymap.model2.Immutable;
 import org.polymap.model2.NameInStore;
 import org.polymap.model2.Property;
@@ -35,19 +39,23 @@ public interface PropertyInfo<T> {
      */
     public String getName();
 
+    /** 
+     * The optional {@link Description} of this property. 
+     */
+    public Optional<String> getDescription();
+    
     /**
      * The name of this property in the underlying store. Usually this is defined
      * via {@link NameInStore}.
      */
     public String getNameInStore();
 
-
     /**
      * The type this property was declared with.
      * <ul>
-     * <li><code>Property&lt;String&gt;</code> : <code>String.class</code></li>
-     * <li><code>CompositeProperty&lt;Person&gt;</code> : <code>Person.class</code></li>
-     * <li><code>CollectionProperty&lt;String&gt;</code> : <code>String.class</code></li>
+     * <li><code>Property&lt;String&gt;</code> -- <code>String.class</code></li>
+     * <li><code>CompositeProperty&lt;Person&gt;</code> -- <code>Person.class</code></li>
+     * <li><code>CollectionProperty&lt;String&gt;</code> -- <code>String.class</code></li>
      * </ul>
      * For Collection properties {@link #getMaxOccurs()} returns a value greater 0.
      * 
@@ -55,9 +63,13 @@ public interface PropertyInfo<T> {
      */
     public Class<T> getType();
 
-    public boolean isAssociation();
+    /**
+     * In case of a {@link Composite} property this returns the {@link ParameterizedType}
+     * of it. This allows to access the type parameters of the Composite type.
+     */
+    public Optional<ParameterizedType> getParameterizedType();
 
-    //public CompositeInfo getDeclaringComposite();
+    public boolean isAssociation();
 
     public T getDefaultValue();
 

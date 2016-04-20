@@ -14,6 +14,11 @@
  */
 package org.polymap.model2.runtime;
 
+import java.util.Optional;
+
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+
 /**
  * 
  *
@@ -21,7 +26,63 @@ package org.polymap.model2.runtime;
  */
 @FunctionalInterface
 public interface ValueInitializer<T> {
-    
+
+    /**
+     * XXX Lambda declaration does not seem to deliver the type parameter, a fallback
+     * needs to be given for this case.
+     */
+    public default Optional<Class<T>> rawResultType() {
+        return rawTypeParameter( getClass() );
+    }
+
     public abstract T initialize( T prototype ) throws Exception;
+
+
+    /**
+     * Returns the raw type (Class) of the first type argument of the given
+     * <code>parameterized</code> type.
+     *
+     * @param cl The parameterized type (Class, interface or
+     *        {@link ParameterizedType}).
+     * @return {@link Optional#empty()} if the given <b>Class</b> has no type param
+     *         (maybe lambda declaration).
+     * @throws AssertionError If argument is not a parameterized.
+     * @throws RuntimeException
+     */
+    public static <R> Optional<Class<R>> rawTypeParameter( Type type ) {
+        ParameterizedType parameterized = null;
+        if (type instanceof ParameterizedType) {
+            parameterized = (ParameterizedType)type;
+        }
+        else if (type instanceof Class) {
+            // class
+            Type generic = ((Class)type).getGenericSuperclass();
+            // interface
+            Type[] genericInterfaces = ((Class)type).getGenericInterfaces();
+            if (generic.equals( Object.class )) {
+                assert genericInterfaces.length == 1;
+                generic = genericInterfaces[0];
+            }
+            if (!(generic instanceof ParameterizedType)) {
+                return Optional.empty();
+            }
+            parameterized = (ParameterizedType)generic;
+        }
+        else {
+            throw new RuntimeException( "Unknown type: " + type );            
+        }
+        
+        assert parameterized instanceof ParameterizedType : "Argument is no a ParameterizedType: " + parameterized;
+        Type result = ((ParameterizedType)parameterized).getActualTypeArguments()[0];
+        if (result instanceof Class) {
+            return Optional.of( (Class<R>)result );
+        }
+        else if (result instanceof ParameterizedType) {
+            return Optional.of( (Class<R>)((ParameterizedType)result).getRawType() );
+        }
+        else {
+            throw new RuntimeException( "Unknown parameterized type: " + result );
+        }
+    }
 
 }

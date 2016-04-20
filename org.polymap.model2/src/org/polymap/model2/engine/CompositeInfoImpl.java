@@ -19,10 +19,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import java.lang.reflect.Field;
 
 import org.polymap.model2.Composite;
+import org.polymap.model2.Description;
 import org.polymap.model2.Immutable;
 import org.polymap.model2.Mixins;
 import org.polymap.model2.NameInStore;
@@ -78,6 +80,12 @@ public final class CompositeInfoImpl
     @Override
     public String getName() {
         return compositeClass.getSimpleName();
+    }
+
+    @Override
+    public Optional<String> getDescription() {
+        Description a = compositeClass.getAnnotation( Description.class );
+        return a != null ? Optional.of( a.value() ) : Optional.empty();
     }
 
     @Override

@@ -26,7 +26,6 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
 import org.polymap.model2.runtime.EntityRepository;
-import org.polymap.model2.runtime.TypedValueInitializer;
 import org.polymap.model2.runtime.UnitOfWork;
 import org.polymap.model2.runtime.ValueInitializer;
 
@@ -313,7 +312,7 @@ public abstract class ComplexModelTest
 
         assertEquals( 0, company.fellows.size() );
 
-        Employee employee = company.fellows.createElement( new TypedValueInitializer<Employee>() {
+        Employee employee = company.fellows.createElement( new ValueInitializer<Employee>() {
             public Employee initialize( Employee proto ) throws Exception {
                 proto.jap.set( 100 );
                 return proto;
@@ -335,7 +334,7 @@ public abstract class ComplexModelTest
     public void testCompositePropertyTypedCreate() {
         Company company = uow.createEntity( Company.class, null );
 
-        Employee employee = company.bigFellow.createValue( new TypedValueInitializer<Employee>() {
+        Employee employee = company.bigFellow.createValue( new ValueInitializer<Employee>() {
             public Employee initialize( Employee proto ) throws Exception {
                 proto.jap.set( 100 );
                 return proto;

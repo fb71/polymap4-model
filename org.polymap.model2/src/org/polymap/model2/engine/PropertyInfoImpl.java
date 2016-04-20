@@ -14,14 +14,18 @@
  */
 package org.polymap.model2.engine;
 
+import java.util.Optional;
+
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 
 import org.polymap.model2.Association;
 import org.polymap.model2.CollectionProperty;
 import org.polymap.model2.Composite;
 import org.polymap.model2.Computed;
+import org.polymap.model2.Description;
 import org.polymap.model2.Immutable;
 import org.polymap.model2.ManyAssociation;
 import org.polymap.model2.MaxOccurs;
@@ -29,7 +33,9 @@ import org.polymap.model2.NameInStore;
 import org.polymap.model2.Nullable;
 import org.polymap.model2.PropertyBase;
 import org.polymap.model2.Queryable;
+import org.polymap.model2.runtime.ModelRuntimeException;
 import org.polymap.model2.runtime.PropertyInfo;
+import org.polymap.model2.runtime.ValueInitializer;
 
 /**
  * 
@@ -52,14 +58,28 @@ public class PropertyInfoImpl<T>
     }
 
     @Override
-    public Class getType() {
+    public Class<T> getType() {
+        Optional<Class<T>> opt = ValueInitializer.rawTypeParameter( field.getGenericType() );
+        return opt.orElseThrow( () -> new ModelRuntimeException( "Type param missing: " + toString() ) );
+    }
+    
+    @Override
+    public Optional<ParameterizedType> getParameterizedType() {
         ParameterizedType declaredType = (ParameterizedType)field.getGenericType();
-        return (Class)declaredType.getActualTypeArguments()[0];
+        Type result = declaredType.getActualTypeArguments()[0];
+        return result instanceof ParameterizedType 
+                ? Optional.of( (ParameterizedType)result ) : Optional.empty();
     }
     
     @Override
     public String getName() {
         return field.getName();
+    }
+
+    @Override
+    public Optional<String> getDescription() {
+        Description a = getAnnotation( Description.class );
+        return a != null ? Optional.of( a.value() ) : Optional.empty();
     }
 
     @Override

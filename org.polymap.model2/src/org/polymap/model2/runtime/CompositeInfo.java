@@ -15,6 +15,7 @@
 package org.polymap.model2.runtime;
 
 import java.util.Collection;
+import java.util.Optional;
 
 import org.polymap.model2.Composite;
 import org.polymap.model2.NameInStore;
@@ -31,6 +32,11 @@ public interface CompositeInfo<T extends Composite> {
      * The name of the Composite.
      */
     public String getName();
+
+    /** 
+     * The optional {@link Description} of this property. 
+     */
+    public Optional<String> getDescription();
 
     /**
      * The name of this property in the underlying store. Usually this is defined
@@ -58,8 +64,6 @@ public interface CompositeInfo<T extends Composite> {
      */
     public Collection<Class<? extends Composite>> getMixins();
 
-//    public Entity getEntity();
-
     /**
      * True if all properties of the Composite are immutable.
      */
@@ -67,7 +71,7 @@ public interface CompositeInfo<T extends Composite> {
 
     public Collection<PropertyInfo> getProperties();
 
-    public PropertyInfo<T> getProperty( String name );
+    public PropertyInfo getProperty( String name );
 
 //    /**
 //     * Provides information of the underlying store.

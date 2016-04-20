@@ -111,12 +111,10 @@ public abstract class ComplexQueryTest
         uow.createEntity( Company.class, null, new ValueInitializer<Company>() {
             public Company initialize( Company proto ) throws Exception {
                 proto.name.set( "Irgendeine" );
-                proto.address.createValue( new ValueInitializer<Address>() {
-                    public Address initialize( Address a ) throws Exception {
+                proto.address.<Address>createValue( (Address a) -> {
                         a.street.set( "Südstrasse" );
                         a.nr.set( 6 );
                         return a;
-                    }
                 });
                 proto.moreAddresses.createElement( new ValueInitializer<Address>() {
                     public Address initialize( Address a ) throws Exception {

@@ -17,7 +17,6 @@ package org.polymap.model2.engine;
 import org.polymap.model2.Property;
 import org.polymap.model2.runtime.ModelRuntimeException;
 import org.polymap.model2.runtime.PropertyInfo;
-import org.polymap.model2.runtime.TypedValueInitializer;
 import org.polymap.model2.runtime.ValueInitializer;
 import org.polymap.model2.store.StoreProperty;
 
@@ -51,7 +50,7 @@ class PropertyImpl<T>
         U result = (U)storeProp.createValue( null );
         if (initializer != null) {
             try {
-                assert !(initializer instanceof TypedValueInitializer) : "TypeValueInitializer not allowed for simple type.";
+                //assert !(initializer instanceof TypedValueInitializer) : "TypeValueInitializer not allowed for simple type.";
                 result = initializer.initialize( result );
             }
             catch (RuntimeException e) {

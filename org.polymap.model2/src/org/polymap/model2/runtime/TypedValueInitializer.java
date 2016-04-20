@@ -24,8 +24,10 @@ import org.polymap.model2.Property;
  * Unfortunatelly this cannot be an (functional) interface as we use the generic
  * abstract class to get the actual type parameter.
  *
+ * @deprecated Use a non-lambda {@link ValueInitializer}. 
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */
 public abstract class TypedValueInitializer<T>
         implements ValueInitializer<T> {
+
 }

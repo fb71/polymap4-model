@@ -17,14 +17,12 @@ package org.polymap.model2.engine;
 import java.util.Collection;
 import java.util.Iterator;
 
-import java.lang.reflect.ParameterizedType;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.polymap.model2.Composite;
 import org.polymap.model2.runtime.EntityRuntimeContext;
 import org.polymap.model2.runtime.ModelRuntimeException;
-import org.polymap.model2.runtime.TypedValueInitializer;
 import org.polymap.model2.runtime.ValueInitializer;
 import org.polymap.model2.store.CompositeState;
 import org.polymap.model2.store.StoreCollectionProperty;
@@ -56,9 +54,7 @@ public class CompositeCollectionPropertyImpl<T extends Composite>
     
     @Override
     public <U extends T> U createElement( ValueInitializer<U> initializer ) {
-        Class actualType = initializer instanceof TypedValueInitializer 
-                ? (Class)((ParameterizedType)initializer.getClass().getGenericSuperclass()).getActualTypeArguments()[0] 
-                : info().getType();
+        Class actualType = initializer.rawResultType().orElse( info().getType() );
 
         CompositeState state = (CompositeState)storeProp.createValue( actualType );
                 
