@@ -131,7 +131,7 @@ public class PropertyInfoImpl<T>
 
     @Override
     public T getDefaultValue() {
-        return (T)DefaultValues.valueOf( field );
+        return (T)DefaultValues.valueOf( this );
     }
 
     @Override    

@@ -16,9 +16,6 @@ package org.polymap.model2.engine;
 
 import java.util.Date;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.ParameterizedType;
-
 import org.apache.commons.logging.LogFactory;import org.apache.commons.logging.Log;
 
 import org.polymap.model2.DefaultValue;
@@ -42,16 +39,15 @@ public class DefaultValues {
      * Creates a default value for the given field. The default value can be defined
      * via the {@link DefaultValue} annotation. 
      * 
-     * @param field
+     * @param propInfo
      * @return The default value for the given field, or null if no default value was
      *         defined via {@link DefaultValue} annotation
      */
-    public static Object valueOf( Field field ) {
-        Class<?> type = (Class)((ParameterizedType)field.getGenericType())
-                .getActualTypeArguments()[0];
+    public static Object valueOf( PropertyInfoImpl propInfo ) {
+        Class<?> type = propInfo.getType();
         
         // @DefaultValue
-        DefaultValue defaultValue = field.getAnnotation( DefaultValue.class );
+        DefaultValue defaultValue = (DefaultValue)propInfo.getAnnotation( DefaultValue.class );
         if (defaultValue != null) {
             if (type.equals( String.class )) {
                 return defaultValue.value();
@@ -69,7 +65,7 @@ public class DefaultValues {
         }
         
         // @Defaults
-        Defaults defaults = field.getAnnotation( Defaults.class );
+        Defaults defaults = (Defaults)propInfo.getAnnotation( Defaults.class );
         if (defaults != null) {
             if (type.equals( String.class )) {
                 return DEFAULT_STRING;
