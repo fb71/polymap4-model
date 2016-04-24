@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -201,10 +202,21 @@ public class FeatureStoreUnitOfWork
 
                 @Override
                 public boolean hasNext() {
-                    return it.hasNext();
+                    if (it == null) {
+                        return false;
+                    }
+                    boolean result = it.hasNext();
+                    if (result == false) {
+                        // fast close connection
+                        close();
+                    }
+                    return result;
                 }
                 @Override
                 public CompositeStateReference next() {
+                    if (!hasNext()) {
+                        throw new NoSuchElementException();
+                    }
                     return new CompositeStateReference() {
                         private Feature feature = it.next();
                         @Override
