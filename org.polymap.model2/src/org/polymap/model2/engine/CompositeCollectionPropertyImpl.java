@@ -14,11 +14,14 @@
  */
 package org.polymap.model2.engine;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
-
+import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+
+import com.google.common.collect.Iterators;
 
 import org.polymap.model2.Composite;
 import org.polymap.model2.runtime.EntityRuntimeContext;
@@ -43,8 +46,8 @@ public class CompositeCollectionPropertyImpl<T extends Composite>
      * here (in contrast to primitive values). This mimics the cache behaviour of the
      * UnitOfWork.
      */
-    // XXX make it a Cache!?
-    //private ArrayList<T>                    cache;
+    // XXX make it a Cache?
+    private List<T>                 cache;
 
     
     public CompositeCollectionPropertyImpl( EntityRuntimeContext entityContext, StoreCollectionProperty storeProp ) {
@@ -72,77 +75,76 @@ public class CompositeCollectionPropertyImpl<T extends Composite>
                 throw new ModelRuntimeException( e );
             }
         }
-//        // update cache
-//        if (cache == null) {
-//            cache = new ArrayList();
-//        }
-//        cache.add( (T)value );
         
+        // cache
+        checkInitCache().add( (T)value );
         return (U)value;
     }
 
+    
+    /**
+     * Simple, straight forward: init all elements on first access. This is not very
+     * smart but other implementations are ticky; this one works and, as number of
+     * elements in a Composite collection is limited in "most cases", performs ok 
+     */
+    protected List<T> checkInitCache() {
+        if (cache == null) {
+            cache = new ArrayList();
+            // always completely iterating until hasNext()==false 'fixes' this problem that
+            // iterator has no close(); hasNext()=false signals the impl to close the connection
+            Iterator<CompositeState> it = (Iterator<CompositeState>)storeProp.iterator();
+            while (it.hasNext()) {
+                CompositeState state = it.next();
+                InstanceBuilder builder = new InstanceBuilder( entityContext );
+                T instance = (T)builder.newComposite( state, state.compositeInstanceType( info().getType() ) );
+                cache.add( instance );
+            }
+        }
+        return cache;
+    }
 
+    
     @Override
     public Iterator<T> iterator() {
-        // XXX is there any kind of thread safety needed here?
+        // FIXME remove not supported yet
+        return Iterators.unmodifiableIterator( checkInitCache().iterator() );
         
-//        // cached?
-//        if (cache != null) {
-//            return new Iterator<T>() {
-//                private Iterator<T>     cacheIt = cache.iterator();
-//                private int             index = 0;
-//                @Override
-//                public boolean hasNext() {
-//                    return cacheIt.hasNext();
+//        return new Iterator<T>() {
+//            private Iterator        storeIt = storeProp.iterator();
+//            
+//            private int             i = 0;
+//            
+//            @Override
+//            public boolean hasNext() {
+//                return storeIt.hasNext();
+//            }
+//            
+//            @Override
+//            public T next() {
+//                if (!hasNext()) {
+//                    throw new NoSuchElementException( "Index: " + i );
 //                }
-//                @Override
-//                public T next() {
-//                    index ++;
-//                    return cacheIt.next();
-//                }
-//                @Override
-//                public void remove() {
-//                    int c = 0, i = index-1;
-//                    for (Iterator storeIt=storeProp.iterator(); storeIt.hasNext() && c <= i; c++) {
-//                        if (c == i) {
-//                            storeIt.remove();
-//                        }
-//                    }
-//                    assert (c-1) == i;
-//                    cacheIt.remove();
-//                }
-//            };
-//        }
-//        // not cached yet
-//        else {
-//            cache = new ArrayList();
-            return new Iterator<T>() {
-                private Iterator        storeIt = storeProp.iterator();
-                @Override
-                public boolean hasNext() {
-                    return storeIt.hasNext();
-                }
-                @Override
-                public T next() {
-                    CompositeState state = (CompositeState)storeIt.next();
-                    InstanceBuilder builder = new InstanceBuilder( entityContext );
-                    T result = (T)builder.newComposite( state, state.compositeInstanceType( info().getType() ) );
-//                    cache.add( result );
-                    return result;
-                }
-                @Override
-                public void remove() {
-                    storeIt.remove();
-//                    cache.remove( cache.size()-1 );
-                }
-            };
-//        }
+//                return cache.computeIfAbsent( i++, _i -> {
+//                    CompositeState state = (CompositeState)storeIt.next();
+//                    InstanceBuilder builder = new InstanceBuilder( entityContext );
+//                    T result = (T)builder.newComposite( state, state.compositeInstanceType( info().getType() ) );
+//                    return result;
+//                });
+//            }
+//            
+//            @Override
+//            public void remove() {
+//                storeIt.remove();
+//                cache.remove( i );
+//            }
+//        };
     }
 
 
     @Override
     public boolean remove( Object o ) {
-        throw new RuntimeException( "Not yet implemented." );
+        throw new UnsupportedOperationException( "Not yet implemented." );
+        
 //        for (Iterator<T> it=iterator(); it.hasNext(); ) {
 //            EntityRepositoryImpl repo = (EntityRepositoryImpl)entityContext.getRepository();
 //            repo.contextOfEntity( o );

@@ -31,6 +31,9 @@ public interface StoreCollectionProperty<T>
         extends Iterable<T>
         /*extends StoreProperty<Collection<T>>, Collection<T>*/ {
 
+    /**
+     * FIXME: give downstream code the possibility to close connection
+     */
     @Override
     public Iterator<T> iterator();
     
