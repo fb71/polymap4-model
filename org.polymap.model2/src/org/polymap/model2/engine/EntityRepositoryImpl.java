@@ -137,7 +137,18 @@ public class EntityRepositoryImpl
 
     @Override
     public <T extends Composite> CompositeInfo infoOf( Class<T> compositeClass ) {
-        return infos.get( compositeClass );
+        CompositeInfo result = infos.get( compositeClass );
+        
+        // for Composite properties the actual type might be a sub-class of the declared type
+        // see TypedValueInitializer
+        if (result == null) {
+            for (Map.Entry<Class<? extends Composite>,CompositeInfo> entry : infos.entrySet()) {
+                if (entry.getKey().isAssignableFrom( compositeClass )) {
+                    return entry.getValue();
+                }
+            }
+        }
+        return result;
     }
     
     @Override    
@@ -165,7 +176,7 @@ public class EntityRepositoryImpl
     
     protected <T extends Composite> T buildMixin( Entity entity, Class<T> mixinClass, UnitOfWork uow ) {
         try {
-            EntityRuntimeContextImpl entityContext = contextOfEntity( entity );
+            EntityRuntimeContextImpl entityContext = contextOf( entity );
             InstanceBuilder builder = new InstanceBuilder( entityContext );
             return builder.newComposite( entityContext.getState(), mixinClass );
         }
@@ -178,17 +189,11 @@ public class EntityRepositoryImpl
     }
 
     
-    protected EntityRuntimeContextImpl contextOfEntity( Entity entity ) {
-        assert entity != null;
-        try {
-            return (EntityRuntimeContextImpl)InstanceBuilder.contextField.get( entity );
-        }
-        catch (RuntimeException e) {
-            throw e;
-        }
-        catch (Exception e) {
-            throw new ModelRuntimeException( e );
-        }
+    /**
+     * Engine internal method that exposes the context of the given entity.
+     */
+    protected EntityRuntimeContextImpl contextOf( Entity entity ) {
+        return InstanceBuilder.contextOf( entity );
     }
     
     
@@ -202,11 +207,9 @@ public class EntityRepositoryImpl
             return EntityRepositoryImpl.this;
         }
 
-
         public EntityRuntimeContext contextOfEntity( Entity entity ) {
-            return EntityRepositoryImpl.this.contextOfEntity( entity );
+            return EntityRepositoryImpl.this.contextOf( entity );
         }
-
     }
 
 

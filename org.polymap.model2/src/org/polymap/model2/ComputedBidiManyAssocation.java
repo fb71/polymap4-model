@@ -19,6 +19,7 @@ import static org.polymap.model2.query.Expressions.is;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.stream.Collectors;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -105,8 +106,11 @@ public class ComputedBidiManyAssocation<T extends Entity>
 
     @Override
     public Object[] toArray() {
-        // XXX Auto-generated method stub
-        throw new RuntimeException( "not yet implemented." );
+        try (
+            ResultSet<T> results = results()
+        ){
+            return results.stream().collect( Collectors.toList() ).toArray();
+        }
     }
 
 

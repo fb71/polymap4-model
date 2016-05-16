@@ -38,6 +38,7 @@ import org.polymap.model2.Composite;
 import org.polymap.model2.Computed;
 import org.polymap.model2.ComputedPropertyBase;
 import org.polymap.model2.Concerns;
+import org.polymap.model2.Entity;
 import org.polymap.model2.ManyAssociation;
 import org.polymap.model2.Property;
 import org.polymap.model2.PropertyBase;
@@ -97,7 +98,25 @@ public final class InstanceBuilder {
             throw new RuntimeException( e );
         }
     }
+
     
+    /**
+     * Engine internal method that exposes the context of the given entity.
+     */
+    protected static EntityRuntimeContextImpl contextOf( Entity entity ) {
+        assert entity != null;
+        try {
+            return (EntityRuntimeContextImpl)contextField.get( entity );
+        }
+        catch (RuntimeException e) {
+            throw e;
+        }
+        catch (Exception e) {
+            throw new ModelRuntimeException( e );
+        }
+    }
+    
+
     
     // instance *******************************************
     

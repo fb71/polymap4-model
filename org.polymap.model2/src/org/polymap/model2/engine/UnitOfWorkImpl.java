@@ -143,7 +143,7 @@ public class UnitOfWorkImpl
         assert id == null || state.id().equals( id );
         
         T result = repo.buildEntity( state, entityClass, this );
-        repo.contextOfEntity( result ).raiseStatus( EntityStatus.CREATED );
+        repo.contextOf( result ).raiseStatus( EntityStatus.CREATED );
 
         boolean ok = loaded.putIfAbsent( id, result );
         if (!ok) {
@@ -246,7 +246,7 @@ public class UnitOfWorkImpl
     public void removeEntity( Entity entity ) {
         assert entity != null : "entity must not be null.";
         checkOpen();
-        repo.contextOfEntity( entity ).raiseStatus( EntityStatus.REMOVED );
+        repo.contextOf( entity ).raiseStatus( EntityStatus.REMOVED );
     }
 
 
@@ -402,7 +402,7 @@ public class UnitOfWorkImpl
                 loaded.remove( entry.getKey() );
             }
             else {
-                repo.contextOfEntity( entry.getValue() ).resetStatus( EntityStatus.LOADED );
+                repo.contextOf( entry.getValue() ).resetStatus( EntityStatus.LOADED );
             }
         }
         

@@ -79,7 +79,7 @@ public class UnitOfWorkNested
                     return null;
                 }
                 else {
-                    CompositeState parentState = repo.contextOfEntity( parentEntity ).getState();
+                    CompositeState parentState = repo.contextOf( parentEntity ).getState();
                     CompositeState state = storeUow().cloneEntityState( parentState );
                     return repo.buildEntity( state, entityClass, UnitOfWorkNested.this );
                 }
@@ -109,7 +109,7 @@ public class UnitOfWorkNested
     public void removeEntity( Entity entity ) {
         assert entity != null : "entity must not be null.";
         checkOpen();
-        repo.contextOfEntity( entity ).raiseStatus( EntityStatus.REMOVED );
+        repo.contextOf( entity ).raiseStatus( EntityStatus.REMOVED );
     }
 
 
@@ -187,11 +187,11 @@ public class UnitOfWorkNested
             if (entity.status() == EntityStatus.CREATED) {
                 // create a separate instance in the parent; same as for modified instances
                 // this allows to manage distinct status for parent and nested entity
-                CompositeState entityState = repo.contextOfEntity( entity ).getState();
+                CompositeState entityState = repo.contextOf( entity ).getState();
                 CompositeState parentState = storeUow().cloneEntityState( entityState );
                 
                 Entity parentEntity = parent.entityForState( entity.getClass(), parentState.getUnderlying() );
-                repo.contextOfEntity( parentEntity ).raiseStatus( EntityStatus.CREATED );
+                repo.contextOf( parentEntity ).raiseStatus( EntityStatus.CREATED );
                 parent.modified.putIfAbsent( parentEntity.id(), parentEntity );
             }
             // modified
@@ -203,10 +203,10 @@ public class UnitOfWorkNested
                     throw new ConcurrentEntityModificationException( "Entity was removed in parent UnitOfWork.", singletonList( entity ) );
                 }
 
-                repo.contextOfEntity( parentEntity ).raiseStatus( entity.status() );
+                repo.contextOf( parentEntity ).raiseStatus( entity.status() );
 
-                CompositeState parentState = repo.contextOfEntity( parentEntity ).getState();
-                CompositeState clonedState = repo.contextOfEntity( entity ).getState();
+                CompositeState parentState = repo.contextOf( parentEntity ).getState();
+                CompositeState clonedState = repo.contextOf( entity ).getState();
                 storeUow().reincorparateEntityState( parentState, clonedState );
             }
         }
