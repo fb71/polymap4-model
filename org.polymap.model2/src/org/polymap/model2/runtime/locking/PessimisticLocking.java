@@ -14,8 +14,16 @@
  */
 package org.polymap.model2.runtime.locking;
 
+import java.util.ArrayDeque;
+import java.util.Collection;
+import java.util.Deque;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Supplier;
+
+import java.lang.ref.WeakReference;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -73,26 +81,47 @@ public abstract class PessimisticLocking
         lock( AccessMode.READ );
         return ((Property)delegate).get();
     }
-
+    
+    @Override
+    public Iterator iterator() {
+        lock( AccessMode.READ );
+        return ((ManyAssociation)delegate).iterator();
+    }
     
     @Override
     public Object createValue( ValueInitializer initializer ) {
         lock( AccessMode.WRITE );
         return ((Property)delegate).createValue( initializer );
     }
-
     
     @Override
     public void set( Object value ) {
         lock( AccessMode.WRITE );
         ((Property)delegate).set( value );
     }
-
     
     @Override
     public boolean add( Object e ) {
        lock( AccessMode.WRITE );
        return ((ManyAssociation)delegate).add( e );
+    }
+    
+    @Override
+    public boolean addAll( Collection c ) {
+       lock( AccessMode.WRITE );
+       return ((ManyAssociation)delegate).addAll( c );
+    }
+
+    @Override
+    public boolean remove( Object e ) {
+       lock( AccessMode.WRITE );
+       return ((ManyAssociation)delegate).remove( e );
+    }
+
+    @Override
+    public boolean removeAll( Collection c ) {
+       lock( AccessMode.WRITE );
+       return ((ManyAssociation)delegate).removeAll( c );
     }
 
     
@@ -114,20 +143,78 @@ public abstract class PessimisticLocking
      */
     protected abstract class EntityLock {
 
+        /**
+         * Deadlock detection: the {@link UnitOfWork} we are currently waiting on.
+         */
+        private volatile UnitOfWork         waitingOn;
+
         public abstract void aquire( UnitOfWork uow, AccessMode accessMode );
+        
+        public abstract UnitOfWork aquiredBy();
         
         public abstract void checkRelease( UnitOfWork uow );
         
+        
+        /**
+         * 
+         *
+         * @param condition
+         * @param mode
+         */
         protected void await( Supplier<Boolean> condition, AccessMode mode ) {
-            // FIXME polling! wait that GC reclaimed readers and writer
-            // a writer has read lock too, so we avoid writer check
-            while (!condition.get()) {
-                log.warn( Thread.currentThread().getName() + ": await lock: " + mode + " on: " + context.getEntity().id() );
-                try { 
-                    wait( 100 );
-                    cleanStaleHolders();    
-                } 
-                catch (InterruptedException e) {
+            try {
+                boolean firstLoop = true;
+                while (!condition.get()) {
+                    log.warn( Thread.currentThread().getName() + ": await lock: " + mode + " on: " + context.getEntity().id() );
+
+                    if (!firstLoop) {
+                        waitingOn = aquiredBy();
+                        //checkDeadlock();
+                    }
+                    firstLoop = false;
+
+                    try { wait( 100 ); } catch (InterruptedException e) { }
+
+                    cleanStaleHolders();
+                }
+            }
+            finally {
+                waitingOn = null;
+            }
+        }
+        
+        
+        /**
+         * Check for circle in the locking graph.
+         * <p/>
+         * XXX This implementation assumes that the lock status of the
+         * {@link UnitOfWork} instances do not change during runtime of the method.
+         * This is not always true. This may cause a {@link DeadlockException} to be thrown
+         * we no deadlock (?).
+         * 
+         * @throws DeadlockException
+         */
+        protected void checkDeadlock() throws DeadlockException {
+            log.warn( "    checking deadlock, start: " + context.getEntity().id() );
+            Set<UnitOfWork> seen = new HashSet();
+            
+            Deque<EntityLock> toBeChecked = new ArrayDeque();
+            toBeChecked.push( this );
+
+            for (EntityLock next=toBeChecked.poll(); next!=null; next=toBeChecked.poll()) {
+                UnitOfWork blocker = next.aquiredBy();
+                if (blocker != null) {
+                    // check / add
+                    if (!seen.add( blocker )) {
+                        throw new DeadlockException( "Deadlock detected" + 
+                                seen.stream().map( l -> context.getEntity().id() ).reduce( "", (c,n) -> (c + " -> " + n) ) );
+                    }
+                    // check all locks which are waiting for the blocker
+                    for (EntityLock l : locks.values()) {
+                        if (/*l != next &&*/ l.waitingOn == blocker) {
+                            toBeChecked.push( l );
+                        }
+                    }
                 }
             }
         }

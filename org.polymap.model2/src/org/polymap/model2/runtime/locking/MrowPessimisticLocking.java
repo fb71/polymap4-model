@@ -30,9 +30,10 @@ import org.polymap.model2.runtime.UnitOfWork;
 
 /**
  * Implements Multiple-Readers/One-Writer {@link PessimisticLocking}.
- * <p>
- * <b>Beware</b>: Not thoroughly tested yet. See {@link PessimisticLocking} for
- * general limitations.
+ * <p/>
+ * There is <b>no deadlock detection</b>!
+ * <p/>
+ * Not thoroughly tested yet. See {@link PessimisticLocking} for general limitations.
  * 
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */
@@ -81,6 +82,11 @@ public class MrowPessimisticLocking
                     }
                 }
             }
+        }
+
+        @Override
+        public UnitOfWork aquiredBy() {
+            return null;
         }
 
         @Override

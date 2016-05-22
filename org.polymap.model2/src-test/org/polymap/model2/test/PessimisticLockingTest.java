@@ -14,6 +14,7 @@
  */
 package org.polymap.model2.test;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.logging.Log;
@@ -22,6 +23,7 @@ import org.apache.commons.logging.LogFactory;
 import org.polymap.model2.Entity;
 import org.polymap.model2.runtime.EntityRepository;
 import org.polymap.model2.runtime.UnitOfWork;
+import org.polymap.model2.runtime.locking.DeadlockException;
 import org.polymap.model2.runtime.locking.PessimisticLocking;
 
 import junit.framework.TestCase;
@@ -122,7 +124,40 @@ public class PessimisticLockingTest
         assertEquals( before.get(), after.get() );
     }
     
-    
+
+    public void _testDeadlock() throws Exception {
+        AtomicBoolean deadlocked = new AtomicBoolean();
+        // t1
+        Thread t1 = new Thread( () -> {
+            UnitOfWork uow = repo.newUnitOfWork();
+            uow.entity( _e1 ).read();
+            try { 
+                Thread.sleep( 100 ); 
+                uow.entity( _e2 ).read();
+            } 
+            catch (InterruptedException e) { }
+            catch (DeadlockException e) { deadlocked.set( true ); }
+        }, "t1" );
+        t1.start();
+        
+        // t2
+        Thread t2 = new Thread( () -> {
+            UnitOfWork uow = repo.newUnitOfWork();
+            uow.entity( _e2 ).read();
+            try { 
+                Thread.sleep( 100 ); 
+                uow.entity( _e1 ).read();
+            } 
+            catch (InterruptedException e) { }
+            catch (DeadlockException e) { deadlocked.set( true ); }
+        }, "t2" );
+        t2.start();
+        
+        t1.join();
+        t2.join();
+        assertEquals( true, deadlocked.get() );
+    }
+
     public static abstract class Locked
             extends Entity {
         

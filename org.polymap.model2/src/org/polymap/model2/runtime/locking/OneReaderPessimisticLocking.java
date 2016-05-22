@@ -28,9 +28,8 @@ import org.polymap.model2.runtime.UnitOfWork;
 
 /**
  * Implements One-Reader {@link PessimisticLocking}.
- * <p>
- * <b>Beware</b>: Not thoroughly tested yet. See {@link PessimisticLocking} for
- * general limitations.
+ * <p/>
+ * See {@link PessimisticLocking} for general limitations.
  * 
  * @author <a href="http://www.polymap.de">Falko Bräutigam</a>
  */
@@ -70,6 +69,11 @@ public class OneReaderPessimisticLocking
         }
 
         @Override
+        public UnitOfWork aquiredBy() {
+            return noReader.get() ? null : reader.get();
+        }
+
+        @Override
         public void checkRelease( UnitOfWork uow ) {
             if (isAquired.test( uow )) {
                 synchronized (this) {
@@ -80,9 +84,4 @@ public class OneReaderPessimisticLocking
         }
     }
 
-//    class Sync 
-//            extends AbstractQueuedSynchronizer {
-//        
-//    }
-    
 }
